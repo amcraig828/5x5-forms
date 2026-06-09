@@ -259,20 +259,18 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // ── CONFIG ─────────────────────────────────────────────────────────────────
-// Your SharePoint site ID — get this from the setup guide Step 1
-const SHAREPOINT_SITE_ID = 'a5fbdbc6-f6ec-4d83-9bed-260aaeb9809a';
-
-// Your SharePoint list ID for "5x5 Submissions" — get this from setup guide Step 2
-const SHAREPOINT_LIST_ID = '841b2bfb-e573-41c0-ad81-96100d308844';
+const EMAILJS_PUBLIC_KEY  = 'qbm0FluRDbLK432li';
+const EMAILJS_SERVICE_ID  = 'service_x2e8pjc';
+const EMAILJS_TEMPLATE_ID = 'l3fa0b2';
 
 const SUPERVISORS = {
-  'Will Brinker': 'william@thespeckledtrout.com',
-  'Joe Lynch / Phillip Jamison': 'joe@thespeckledtrout.com'
+  'Will Brinker': { name: 'Will', email: 'william@thespeckledtrout.com' },
+  'Joe Lynch / Phillip Jamison': { name: 'Joe / Phillip', email: 'joe@thespeckledtrout.com' }
 };
 
-// Supervisor view URL — full SharePoint URL to 5x5-supervisor.html
 const SUPERVISOR_FORM_URL = 'https://amcraig828.github.io/5x5-forms/5x5-supervisor.html';
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -499,62 +497,30 @@ function showError(msg) {
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-async function getAccessToken() {
-  // Uses the logged-in user's SharePoint session via fetch to Graph
-  // No token needed when hosted on SharePoint — credentials are passed automatically
-  return null;
-}
-
 async function submitForm() {
   const data = collectData();
   const err = validate(data);
   if (err) { showError(err); return; }
   document.getElementById('error-msg').style.display = 'none';
 
-  const supervisorEmail = SUPERVISORS[data.supervisorName] || '';
+  const sup = SUPERVISORS[data.supervisorName] || {};
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   const supervisorLink = `${SUPERVISOR_FORM_URL}?data=${encoded}`;
 
-  // Write to SharePoint list via Microsoft Graph API
-  // When hosted on SharePoint, the user's session authenticates automatically
-  const listItem = {
-    fields: {
-      Title: `${data.name} — ${data.quarter}`,
-      EmployeeName: data.name,
-      EmployeeEmail: data.empEmail,
-      SupervisorName: data.supervisorName,
-      SupervisorEmail: supervisorEmail,
-      Entity: data.entity,
-      Quarter: data.quarter,
-      SupervisorLink: supervisorLink,
-      FormDataJSON: JSON.stringify(data),
-      Status: 'Pending Supervisor Review',
-      SubmittedAt: new Date().toISOString()
-    }
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  const templateParams = {
+    supervisor_name:  sup.name || data.supervisorName,
+    supervisor_email: sup.email || '',
+    employee_name:    data.name,
+    quarter:          data.quarter,
+    supervisor_link:  supervisorLink
   };
 
   try {
-    const response = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_SITE_ID}/lists/${SHAREPOINT_LIST_ID}/items`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(listItem),
-        credentials: 'include'
-      }
-    );
-    if (response.ok) {
-      const created = await response.json();
-      const itemId = created.id;
-      // Append the list item ID to the supervisor link so the supervisor form can update the right record
-      const finalSupLink = `${supervisorLink}&itemId=${itemId}`;
-      console.log('Supervisor link:', finalSupLink);
-    } else {
-      const errText = await response.text();
-      console.error('SharePoint list write failed:', errText);
-    }
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
   } catch(e) {
-    console.warn('SharePoint list write failed (IDs not yet configured or running outside SharePoint):', e);
+    console.error('EmailJS send failed:', e);
   }
 
   document.getElementById('main-form').style.display = 'none';
