@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5x5x5 Quarterly Conversation — Supervisor Review</title>
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-secondary: #5a5a55;
+    --ink-tertiary: #9a9a93;
+    --surface: #ffffff;
+    --surface-secondary: #f7f6f2;
+    --surface-tertiary: #f0efe9;
+    --border: #e2e0d8;
+    --border-strong: #c8c6bc;
+    --accent: #2a5c45;
+    --accent-light: #e8f0ec;
+    --accent-mid: #4a8c6a;
+    --emp-blue: #1a3a5c;
+    --emp-blue-light: #e8eef5;
+    --sup-green: #2a5c45;
+    --sup-green-light: #e8f0ec;
+    --warn: #8c4a1a;
+    --warn-light: #f5ece8;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--surface-secondary); color: var(--ink); min-height: 100vh; }
+  .page { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .header { border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; margin-bottom: 2rem; }
+  .header-eyebrow { font-family: 'Arial', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-tertiary); margin-bottom: 6px; }
+  .header h1 { font-size: 28px; font-weight: normal; letter-spacing: -0.02em; color: var(--ink); }
+  .header-sub { font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink-secondary); margin-top: 6px; }
+
+  .meta-strip { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .meta-item label { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-tertiary); display: block; margin-bottom: 3px; }
+  .meta-item span { font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); font-weight: bold; }
+
+  .section { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.25rem; }
+  .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 1.25rem; }
+  .section-title { font-size: 17px; font-weight: normal; letter-spacing: -0.01em; }
+  .section-note { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--ink-tertiary); margin-bottom: 1rem; }
+
+  .section-badge { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+  .badge-emp { background: var(--emp-blue-light); color: var(--emp-blue); }
+  .badge-sup { background: var(--sup-green-light); color: var(--sup-green); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-tertiary); padding: 4px 8px 10px 0; border-bottom: 0.5px solid var(--border); text-align: left; font-weight: normal; }
+  td { padding: 10px 8px 10px 0; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+
+  .rating-row { display: flex; gap: 4px; }
+  .rating-btn { font-family: 'Arial', sans-serif; font-size: 12px; width: 30px; height: 30px; border: 0.5px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--ink-secondary); cursor: pointer; transition: all 0.1s; }
+  .rating-btn.emp-sel { background: var(--emp-blue); border-color: var(--emp-blue); color: white; cursor: default; }
+  .rating-btn.sup-sel { background: var(--sup-green); border-color: var(--sup-green); color: white; }
+  .rating-btn:hover:not(.emp-sel) { border-color: var(--sup-green); color: var(--sup-green); }
+  .rating-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .scale-btn { font-family: 'Arial', sans-serif; font-size: 11px; width: 28px; height: 28px; border: 0.5px solid var(--border-strong); border-radius: 5px; background: var(--surface); color: var(--ink-secondary); cursor: pointer; transition: all 0.1s; }
+  .scale-btn.emp-sel { background: var(--emp-blue); border-color: var(--emp-blue); color: white; cursor: default; }
+  .scale-btn.sup-sel { background: var(--sup-green); border-color: var(--sup-green); color: white; }
+  .scale-btn:hover:not(.emp-sel) { border-color: var(--sup-green); color: var(--sup-green); }
+  .scale-btn:disabled { opacity: 0.5; cursor: default; }
+  .scale-row { display: flex; gap: 3px; flex-wrap: wrap; }
+
+  .emp-answer { background: var(--emp-blue-light); border-left: 3px solid var(--emp-blue); border-radius: 0 var(--radius) var(--radius) 0; padding: 10px 14px; font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); line-height: 1.55; margin-bottom: 8px; }
+  .emp-answer-label { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--emp-blue); margin-bottom: 4px; }
+
+  .seat-row { padding: 10px 0; border-bottom: 0.5px solid var(--border); font-family: 'Arial', sans-serif; font-size: 13px; }
+  .seat-row:last-child { border-bottom: none; }
+  .seat-name { font-weight: bold; }
+  .seat-measurable { color: var(--ink-secondary); margin-top: 2px; }
+  .gwc-badges { display: flex; gap: 6px; margin-top: 6px; }
+  .gwc-badge { font-family: 'Arial', sans-serif; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+  .gwc-badge.yes { background: var(--sup-green-light); color: var(--sup-green); }
+  .gwc-badge.no { background: var(--warn-light); color: var(--warn); }
+
+  .rock-row { padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+  .rock-row:last-of-type { border-bottom: none; }
+  .rock-name { font-size: 14px; margin-bottom: 8px; }
+  .dual-ratings { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .dual-ratings > div > .rating-label { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+
+  .health-block { margin-bottom: 1.5rem; }
+  .health-block:last-child { margin-bottom: 0; }
+  .health-label { font-family: 'Arial', sans-serif; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-secondary); margin-bottom: 8px; font-weight: bold; }
+  .health-item { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .health-item:last-of-type { border-bottom: none; }
+  .health-item p { font-size: 13px; color: var(--ink); margin-bottom: 10px; line-height: 1.5; }
+  .health-dual { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .health-dual > div > .rating-label { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .health-emp-feedback { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--emp-blue); background: var(--emp-blue-light); border-radius: var(--radius); padding: 8px 12px; margin-top: 10px; }
+  .health-emp-feedback span { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 3px; }
+
+  .q-item { padding: 14px 0; border-bottom: 0.5px solid var(--border); }
+  .q-item:last-child { border-bottom: none; }
+  .q-text { font-size: 14px; margin-bottom: 10px; }
+  textarea.sup-notes { width: 100%; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--surface-secondary); font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); padding: 8px 10px; resize: vertical; min-height: 60px; outline: none; line-height: 1.5; margin-top: 8px; }
+  textarea.sup-notes:focus { border-color: var(--sup-green); box-shadow: 0 0 0 2px var(--sup-green-light); }
+
+  .dev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  input.dev-input { border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--surface-secondary); font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); padding: 8px 10px; width: 100%; outline: none; }
+  input.dev-input:focus { border-color: var(--sup-green); box-shadow: 0 0 0 2px var(--sup-green-light); }
+  .dev-header { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dev-header span { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-tertiary); }
+
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group label { font-family: 'Arial', sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-secondary); }
+  .field-group input, .field-group textarea { border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); padding: 8px 10px; outline: none; width: 100%; }
+  .field-group textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+  .field-group input:focus, .field-group textarea:focus { border-color: var(--sup-green); box-shadow: 0 0 0 2px var(--sup-green-light); }
+
+  button.primary { font-family: 'Arial', sans-serif; font-size: 13px; background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 10px 24px; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.15s; }
+  button.primary:hover { opacity: 0.88; }
+  button.primary:disabled { opacity: 0.5; cursor: default; }
+  button.add-row { font-family: 'Arial', sans-serif; font-size: 12px; background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); color: var(--ink-secondary); padding: 5px 12px; cursor: pointer; margin-top: 8px; }
+  button.add-row:hover { border-color: var(--sup-green); color: var(--sup-green); }
+  .btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 2rem; }
+
+  .error-msg { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--warn); background: var(--warn-light); border: 0.5px solid #d4905a; border-radius: var(--radius); padding: 10px 14px; margin-bottom: 1rem; display: none; }
+
+  .no-data { font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink-tertiary); padding: 8px 0; font-style: italic; }
+
+  .divider { height: 0.5px; background: var(--border); margin: 1rem 0; }
+
+  .success-screen { display: none; text-align: center; padding: 3rem 1rem; }
+  .success-screen .check { font-size: 48px; color: var(--accent); margin-bottom: 1rem; }
+  .success-screen h2 { font-size: 22px; font-weight: normal; margin-bottom: 8px; }
+  .success-screen p { font-family: 'Arial', sans-serif; font-size: 14px; color: var(--ink-secondary); line-height: 1.6; max-width: 420px; margin: 0 auto; }
+
+  .rating-label-emp { color: var(--emp-blue); }
+  .rating-label-sup { color: var(--sup-green); }
+
+  @media print {
+    body { background: white; }
+    .btn-row, button { display: none !important; }
+    .section { break-inside: avoid; }
+  }
+
+  @media (max-width: 600px) {
+    .meta-strip { grid-template-columns: 1fr 1fr; }
+    .dual-ratings, .health-dual { flex-direction: column; gap: 12px; }
+    .dev-grid, .dev-header { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div id="main-form">
+  <div class="header">
+    <div class="header-eyebrow">The Speckled Trout Outfitters</div>
+    <h1>5×5×5 Quarterly Conversation</h1>
+    <div class="header-sub">Supervisor review — employee responses are shown in blue. Add your ratings and notes, then save to SharePoint.</div>
+  </div>
+
+  <!-- Meta strip populated from employee data -->
+  <div class="meta-strip" id="meta-strip">
+    <div class="meta-item"><label>Employee</label><span id="meta-name">—</span></div>
+    <div class="meta-item"><label>Entity</label><span id="meta-entity">—</span></div>
+    <div class="meta-item"><label>Quarter</label><span id="meta-quarter">—</span></div>
+    <div class="meta-item"><label>Supervisor</label><span id="meta-supervisor">—</span></div>
+  </div>
+
+  <!-- Core Values -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Core values</div>
+      <span class="section-badge badge-emp">Employee</span>
+      <span class="section-badge badge-sup">Supervisor</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:22%">Value</th>
+          <th style="width:18%">One word</th>
+          <th style="width:28%"><span class="badge-emp section-badge">Employee rating</span></th>
+          <th><span class="badge-sup section-badge">Your rating</span></th>
+        </tr>
+      </thead>
+      <tbody id="cv-sup-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Seats -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Seat(s)</div>
+      <span class="section-badge badge-emp">Employee response</span>
+    </div>
+    <div id="seat-sup-rows"></div>
+  </div>
+
+  <!-- Rocks -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Rock review</div>
+      <span class="section-badge badge-emp">Employee</span>
+      <span class="section-badge badge-sup">Supervisor</span>
+    </div>
+    <div id="rock-sup-rows"></div>
+  </div>
+
+  <!-- Health Check -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Health check</div>
+      <span class="section-badge badge-emp">Employee</span>
+      <span class="section-badge badge-sup">Supervisor</span>
+    </div>
+    <div id="health-sup-blocks"></div>
+  </div>
+
+  <!-- Discussion Questions -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Discussion questions</div>
+      <span class="section-badge badge-emp">Employee responses</span>
+    </div>
+    <div id="q-sup-list"></div>
+  </div>
+
+  <!-- Areas for Development -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Areas for development</div>
+      <span class="section-badge badge-sup">Supervisor completes</span>
+    </div>
+    <div class="section-note">Capture development areas and the plan to get there.</div>
+    <div class="dev-header" style="margin-bottom:6px">
+      <span>Area</span>
+      <span>Plan</span>
+    </div>
+    <div class="dev-grid" id="dev-rows"></div>
+    <button class="add-row" onclick="addDevRow()">+ Add area</button>
+  </div>
+
+  <!-- Supervisor notes -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Supervisor overall notes</div>
+      <span class="section-badge badge-sup">Optional</span>
+    </div>
+    <div class="field-group">
+      <label>Overall notes for this conversation</label>
+      <textarea id="sup-overall-notes" placeholder="Any additional context, patterns observed, or next steps..."></textarea>
+    </div>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="btn-row">
+    <button class="primary" onclick="saveToSharePoint()">Save to SharePoint &rarr;</button>
+  </div>
+</div>
+
+<div class="success-screen" id="success-screen">
+  <div class="check">✓</div>
+  <h2>Saved</h2>
+  <p>The completed review has been saved to SharePoint. You're ready for the meeting.</p>
+</div>
+
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+// Your SharePoint site ID — same as in the employee form
+const SHAREPOINT_SITE_ID = 'YOUR_SITE_ID';
+
+// Your SharePoint list ID for "5x5 Submissions" — same as in the employee form
+const SHAREPOINT_LIST_ID = 'YOUR_LIST_ID';
+// ────────────────────────────────────────────────────────────────────────────
+
+const HEALTH_CATS = [
+  { key:'belonging', label:'Belonging', items:[
+    'I feel a genuine sense of belonging with my team and coworkers.',
+    'I can be myself at work without fear of judgment.',
+    'I have at least one coworker I trust and can talk to openly.'
+  ]},
+  { key:'inspired', label:'Inspired', items:[
+    'I am inspired by our company\'s purpose, vision, and values.',
+    'I believe the organization is heading in the right direction.',
+    'I am proud of the work we do and the impact it creates.'
+  ]},
+  { key:'trusted', label:'Trusted', items:[
+    'My leader communicates expectations clearly and follows through.',
+    'I feel comfortable giving upward feedback and voicing concerns.',
+    'I believe our leadership team is authentic and transparent.'
+  ]},
+  { key:'empowered', label:'Empowered', items:[
+    'I have the tools, training, and authority to do my job well.',
+    'I can make decisions that impact my work and outcomes.',
+    'I\'m encouraged to think independently and take initiative.'
+  ]},
+  { key:'accountable', label:'Accountable', items:[
+    'I understand my role and how success is measured.',
+    'My team holds each other accountable with respect and fairness.',
+    'I consistently receive feedback that helps me improve.'
+  ]},
+  { key:'measured', label:'Measured', items:[
+    'I know the key metrics that define success for my role.',
+    'Our team reviews measurable progress regularly.',
+    'I see how my work connects to company goals and results.'
+  ]},
+  { key:'balanced', label:'Balanced', items:[
+    'I can maintain a healthy work-life balance.',
+    'I feel supported in managing personal commitments.',
+    'I can recharge and return to work refreshed.'
+  ]}
+];
+
+let empData = null;
+let devRowCount = 3;
+
+function loadEmployeeData() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('data');
+  if (!encoded) return null;
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(encoded))));
+  } catch(e) {
+    console.error('Failed to decode employee data', e);
+    return null;
+  }
+}
+
+function selectSupRating(rowId, val) {
+  document.querySelectorAll(`#${rowId} .rating-btn:not(.emp-sel)`).forEach(b => {
+    b.classList.toggle('sup-sel', parseInt(b.dataset.val) === val);
+  });
+}
+
+function selectSupScale(rowId, val) {
+  document.querySelectorAll(`#${rowId} .scale-btn:not(.emp-sel)`).forEach(b => {
+    b.classList.toggle('sup-sel', parseInt(b.dataset.val) === val);
+  });
+}
+
+function getSelected(containerId, cls) {
+  const sel = document.querySelector(`#${containerId} .${cls}`);
+  return sel ? parseInt(sel.dataset.val) : null;
+}
+
+function buildCV(cv) {
+  const tb = document.getElementById('cv-sup-body');
+  tb.innerHTML = cv.map((v, i) => `
+    <tr>
+      <td>${v.value}</td>
+      <td style="font-family:Arial,sans-serif;color:var(--ink-secondary)">${v.word || '—'}</td>
+      <td>
+        <div class="rating-row">
+          ${[1,2,3].map(n => `<button class="rating-btn${v.rating===n?' emp-sel':''}" data-val="${n}" disabled>${n}</button>`).join('')}
+        </div>
+      </td>
+      <td>
+        <div class="rating-row" id="sup-cv-${i}">
+          ${[1,2,3].map(n => `<button class="rating-btn" data-val="${n}" onclick="selectSupRating('sup-cv-${i}',${n})">${n}</button>`).join('')}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function buildSeats(seats) {
+  const wrap = document.getElementById('seat-sup-rows');
+  if (!seats || seats.length === 0) {
+    wrap.innerHTML = '<p class="no-data">No seats entered by employee.</p>';
+    return;
+  }
+  wrap.innerHTML = seats.map(s => `
+    <div class="seat-row">
+      <div class="seat-name">${s.name}</div>
+      ${s.measurable ? `<div class="seat-measurable">${s.measurable}</div>` : ''}
+      <div class="gwc-badges">
+        <span class="gwc-badge ${s.getIt?'yes':'no'}">Get it: ${s.getIt?'Yes':'No'}</span>
+        <span class="gwc-badge ${s.wantIt?'yes':'no'}">Want it: ${s.wantIt?'Yes':'No'}</span>
+        <span class="gwc-badge ${s.capacity?'yes':'no'}">Capacity: ${s.capacity?'Yes':'No'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function buildRocks(rocks) {
+  const wrap = document.getElementById('rock-sup-rows');
+  if (!rocks || rocks.length === 0) {
+    wrap.innerHTML = '<p class="no-data">No rocks entered by employee.</p>';
+    return;
+  }
+  wrap.innerHTML = rocks.map((r, i) => `
+    <div class="rock-row">
+      <div class="rock-name">${r.name}</div>
+      <div class="dual-ratings">
+        <div>
+          <div class="rating-label rating-label-emp" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Employee</div>
+          <div class="rating-row">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="rating-btn${r.rating===n?' emp-sel':''}" data-val="${n}" disabled>${n}</button>`).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="rating-label rating-label-sup" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Supervisor</div>
+          <div class="rating-row" id="sup-rock-${i}">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="rating-btn" data-val="${n}" onclick="selectSupRating('sup-rock-${i}',${n})">${n}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function buildHealth(health) {
+  const wrap = document.getElementById('health-sup-blocks');
+  wrap.innerHTML = HEALTH_CATS.map(cat => {
+    const h = health && health[cat.key];
+    return `
+      <div class="health-block">
+        <div class="health-label">${cat.label}</div>
+        ${cat.items.map((item, i) => {
+          const empRating = h && h.ratings ? h.ratings[i] : null;
+          return `
+            <div class="health-item">
+              <p>${item}</p>
+              <div class="health-dual">
+                <div>
+                  <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--emp-blue);margin-bottom:6px">Employee</div>
+                  <div class="scale-row">
+                    ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="scale-btn${empRating===n?' emp-sel':''}" data-val="${n}" disabled>${n}</button>`).join('')}
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--sup-green);margin-bottom:6px">Supervisor</div>
+                  <div class="scale-row" id="sup-health-${cat.key}-${i}">
+                    ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="scale-btn" data-val="${n}" onclick="selectSupScale('sup-health-${cat.key}-${i}',${n})">${n}</button>`).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+        ${h && h.feedback ? `
+          <div class="health-emp-feedback">
+            <span>Employee note</span>${h.feedback}
+          </div>` : ''}
+        <div class="divider"></div>
+      </div>`;
+  }).join('');
+}
+
+function buildQuestions(questions) {
+  const wrap = document.getElementById('q-sup-list');
+  if (!questions || questions.length === 0) {
+    wrap.innerHTML = '<p class="no-data">No questions answered by employee.</p>';
+    return;
+  }
+  wrap.innerHTML = questions.map((q, i) => `
+    <div class="q-item">
+      <div class="q-text">${q.question}</div>
+      <div class="emp-answer-label">Employee response</div>
+      <div class="emp-answer">${q.answer || '(no response entered)'}</div>
+      <textarea class="sup-notes" id="sup-q-note-${i}" placeholder="Supervisor notes (optional)..."></textarea>
+    </div>`).join('');
+}
+
+function buildDevRows() {
+  const wrap = document.getElementById('dev-rows');
+  wrap.innerHTML = Array.from({length: devRowCount}, (_, i) => `
+    <input class="dev-input" id="dev-area-${i}" placeholder="Development area">
+    <input class="dev-input" id="dev-plan-${i}" placeholder="Plan">
+  `).join('');
+}
+buildDevRows();
+function addDevRow() { devRowCount++; buildDevRows(); }
+
+function collectSupData() {
+  const cvRatings = empData.cv.map((v, i) => getSelected(`sup-cv-${i}`, 'sup-sel'));
+  const rockRatings = empData.rocks.map((r, i) => getSelected(`sup-rock-${i}`, 'sup-sel'));
+  const healthRatings = {};
+  HEALTH_CATS.forEach(cat => {
+    healthRatings[cat.key] = empData.health[cat.key]?.ratings?.map((_, i) => getSelected(`sup-health-${cat.key}-${i}`, 'sup-sel'));
+  });
+  const qNotes = (empData.questions || []).map((q, i) => ({
+    question: q.question,
+    empAnswer: q.answer,
+    supNote: document.getElementById(`sup-q-note-${i}`)?.value.trim() || ''
+  }));
+  const devAreas = Array.from({length: devRowCount}, (_, i) => ({
+    area: document.getElementById(`dev-area-${i}`)?.value.trim() || '',
+    plan: document.getElementById(`dev-plan-${i}`)?.value.trim() || ''
+  })).filter(d => d.area);
+  const overallNotes = document.getElementById('sup-overall-notes').value.trim();
+
+  return { cvRatings, rockRatings, healthRatings, qNotes, devAreas, overallNotes };
+}
+
+async function saveToSharePoint() {
+  const supData = collectSupData();
+  const completedAt = new Date().toISOString();
+
+  // Update the existing list item with supervisor data
+  // The list item ID was stored in the URL when the supervisor link was generated
+  const params = new URLSearchParams(window.location.search);
+  const listItemId = params.get('itemId');
+
+  const updatePayload = {
+    fields: {
+      SupervisorDataJSON: JSON.stringify(supData),
+      Status: 'Complete',
+      CompletedAt: completedAt
+    }
+  };
+
+  if (listItemId && SHAREPOINT_SITE_ID !== 'YOUR_SITE_ID') {
+    try {
+      const response = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_SITE_ID}/lists/${SHAREPOINT_LIST_ID}/items/${listItemId}/fields`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload.fields),
+          credentials: 'include'
+        }
+      );
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('SharePoint update failed:', errText);
+      }
+    } catch(e) {
+      console.warn('SharePoint update failed:', e);
+    }
+  } else {
+    console.warn('No list item ID in URL or site ID not configured — running in test mode.');
+  }
+
+  document.getElementById('main-form').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+// Init
+empData = loadEmployeeData();
+if (empData) {
+  document.getElementById('meta-name').textContent = empData.name || '—';
+  document.getElementById('meta-entity').textContent = empData.entity || '—';
+  document.getElementById('meta-quarter').textContent = empData.quarter || '—';
+  document.getElementById('meta-supervisor').textContent = empData.supervisorName || '—';
+  buildCV(empData.cv || []);
+  buildSeats(empData.seats || []);
+  buildRocks(empData.rocks || []);
+  buildHealth(empData.health || {});
+  buildQuestions(empData.questions || []);
+} else {
+  // No data in URL — show placeholder state for testing
+  document.getElementById('meta-name').textContent = 'No employee data loaded';
+  buildCV([
+    {value:'Community',word:'',rating:null},{value:'Integrity',word:'',rating:null},
+    {value:'Authenticity',word:'',rating:null},{value:'Fun',word:'',rating:null},
+    {value:'Stewardship',word:'',rating:null},{value:'Excellence',word:'',rating:null}
+  ]);
+  buildSeats([]);
+  buildRocks([]);
+  buildHealth({});
+  buildQuestions([]);
+}
+</script>
+</body>
+</html>

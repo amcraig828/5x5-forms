@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5x5x5 Quarterly Conversation — Employee</title>
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-secondary: #5a5a55;
+    --ink-tertiary: #9a9a93;
+    --surface: #ffffff;
+    --surface-secondary: #f7f6f2;
+    --surface-tertiary: #f0efe9;
+    --border: #e2e0d8;
+    --border-strong: #c8c6bc;
+    --accent: #2a5c45;
+    --accent-light: #e8f0ec;
+    --accent-mid: #4a8c6a;
+    --emp-blue: #1a3a5c;
+    --emp-blue-light: #e8eef5;
+    --warn: #8c4a1a;
+    --warn-light: #f5ece8;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--surface-secondary); color: var(--ink); min-height: 100vh; }
+  .page { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  /* Header */
+  .header { border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; margin-bottom: 2rem; }
+  .header-eyebrow { font-family: 'Arial', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-tertiary); margin-bottom: 6px; }
+  .header h1 { font-size: 28px; font-weight: normal; letter-spacing: -0.02em; color: var(--ink); }
+  .header-sub { font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink-secondary); margin-top: 6px; }
+
+  /* Meta fields */
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 2rem; }
+  .meta-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group label { font-family: 'Arial', sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-secondary); }
+  .field-group input, .field-group select { border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); padding: 8px 10px; outline: none; width: 100%; }
+  .field-group input:focus, .field-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+
+  /* Sections */
+  .section { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.25rem; }
+  .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 1.25rem; }
+  .section-title { font-size: 17px; font-weight: normal; letter-spacing: -0.01em; color: var(--ink); }
+  .section-badge { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+  .badge-emp { background: var(--emp-blue-light); color: var(--emp-blue); }
+  .badge-sup { background: var(--accent-light); color: var(--accent); }
+  .section-note { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--ink-tertiary); margin-bottom: 1rem; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font-family: 'Arial', sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-tertiary); padding: 4px 8px 10px 0; border-bottom: 0.5px solid var(--border); text-align: left; font-weight: normal; }
+  td { padding: 10px 8px 10px 0; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Rating buttons — 1-2-3 */
+  .rating-row { display: flex; gap: 4px; }
+  .rating-btn { font-family: 'Arial', sans-serif; font-size: 12px; width: 30px; height: 30px; border: 0.5px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--ink-secondary); cursor: pointer; transition: all 0.1s; }
+  .rating-btn:hover { border-color: var(--emp-blue); color: var(--emp-blue); }
+  .rating-btn.selected { background: var(--emp-blue); border-color: var(--emp-blue); color: white; }
+
+  /* Scale buttons — 1-10 */
+  .scale-row { display: flex; gap: 3px; flex-wrap: wrap; }
+  .scale-btn { font-family: 'Arial', sans-serif; font-size: 11px; width: 28px; height: 28px; border: 0.5px solid var(--border-strong); border-radius: 5px; background: var(--surface); color: var(--ink-secondary); cursor: pointer; transition: all 0.1s; }
+  .scale-btn:hover { border-color: var(--emp-blue); color: var(--emp-blue); }
+  .scale-btn.selected { background: var(--emp-blue); border-color: var(--emp-blue); color: white; }
+
+  /* Text inputs inline */
+  input.inline { border: none; border-bottom: 0.5px solid var(--border-strong); background: transparent; font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); padding: 2px 4px; outline: none; width: 120px; }
+  input.inline:focus { border-bottom-color: var(--emp-blue); }
+
+  /* Rock rows */
+  .rock-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .rock-row:last-of-type { border-bottom: none; }
+  input.rock-name { border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--surface-secondary); font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); padding: 7px 10px; width: 100%; outline: none; }
+  input.rock-name:focus { border-color: var(--emp-blue); box-shadow: 0 0 0 2px var(--emp-blue-light); }
+
+  /* Seat rows */
+  .seat-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .seat-row:last-of-type { border-bottom: none; }
+  .gwc-checks { display: flex; gap: 10px; }
+  .gwc-checks label { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--ink-secondary); display: flex; gap: 5px; align-items: center; cursor: pointer; white-space: nowrap; }
+
+  /* Health check */
+  .health-block { margin-bottom: 1.5rem; }
+  .health-block:last-child { margin-bottom: 0; }
+  .health-label { font-family: 'Arial', sans-serif; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-secondary); margin-bottom: 8px; font-weight: bold; }
+  .health-item { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .health-item:last-of-type { border-bottom: none; }
+  .health-item p { font-size: 13px; color: var(--ink); line-height: 1.5; }
+  .health-feedback { margin-top: 8px; }
+  .health-feedback input { width: 100%; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--surface-secondary); font-family: 'Arial', sans-serif; font-size: 12px; color: var(--ink); padding: 7px 10px; outline: none; }
+  .health-feedback input:focus { border-color: var(--emp-blue); box-shadow: 0 0 0 2px var(--emp-blue-light); }
+  .health-feedback label { font-family: 'Arial', sans-serif; font-size: 11px; color: var(--ink-tertiary); display: block; margin-bottom: 4px; }
+
+  /* Discussion questions */
+  .q-item { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .q-item:last-child { border-bottom: none; }
+  .q-top { display: flex; gap: 10px; align-items: flex-start; }
+  .q-top input[type=checkbox] { margin-top: 3px; cursor: pointer; accent-color: var(--emp-blue); }
+  .q-top label { font-size: 13px; color: var(--ink); cursor: pointer; line-height: 1.5; }
+  .q-answer { display: none; margin-top: 8px; margin-left: 22px; }
+  .q-answer textarea { width: 100%; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--surface-secondary); font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink); padding: 8px 10px; outline: none; resize: vertical; min-height: 64px; line-height: 1.5; }
+  .q-answer textarea:focus { border-color: var(--emp-blue); box-shadow: 0 0 0 2px var(--emp-blue-light); }
+
+  /* Buttons */
+  .btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 2rem; }
+  button.primary { font-family: 'Arial', sans-serif; font-size: 13px; background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 10px 24px; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.15s; }
+  button.primary:hover { opacity: 0.88; }
+  button.add-row { font-family: 'Arial', sans-serif; font-size: 12px; background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); color: var(--ink-secondary); padding: 5px 12px; cursor: pointer; margin-top: 8px; }
+  button.add-row:hover { border-color: var(--emp-blue); color: var(--emp-blue); }
+
+  /* Error states */
+  .error-msg { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--warn); background: var(--warn-light); border: 0.5px solid #d4905a; border-radius: var(--radius); padding: 10px 14px; margin-bottom: 1rem; display: none; }
+
+  /* Success screen */
+  .success-screen { display: none; text-align: center; padding: 3rem 1rem; }
+  .success-screen .check { font-size: 48px; color: var(--accent); margin-bottom: 1rem; }
+  .success-screen h2 { font-size: 22px; font-weight: normal; margin-bottom: 8px; }
+  .success-screen p { font-family: 'Arial', sans-serif; font-size: 14px; color: var(--ink-secondary); line-height: 1.6; max-width: 420px; margin: 0 auto; }
+
+  .total-line { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--ink-secondary); padding-top: 8px; text-align: right; }
+  .divider { height: 0.5px; background: var(--border); margin: 1rem 0; }
+
+  @media (max-width: 600px) {
+    .meta-grid, .meta-grid.three { grid-template-columns: 1fr; }
+    .seat-row { grid-template-columns: 1fr; }
+    .health-item { grid-template-columns: 1fr; }
+    .rock-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div id="main-form">
+    <div class="header">
+      <div class="header-eyebrow">The Speckled Trout Outfitters</div>
+      <h1>5×5×5 Quarterly Conversation</h1>
+      <div class="header-sub">Employee section — complete before your meeting. Your responses will be shared with your supervisor.</div>
+    </div>
+
+    <!-- Meta -->
+    <div class="meta-grid three">
+      <div class="field-group">
+        <label>Employee name</label>
+        <input type="text" id="emp-name" placeholder="Your full name">
+      </div>
+      <div class="field-group">
+        <label>Entity</label>
+        <select id="emp-entity">
+          <option value="">Select entity...</option>
+          <option>The Speckled Trout Outfitters</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Quarter</label>
+        <select id="emp-quarter">
+          <option value="">Select quarter...</option>
+          <option>Q1 2026</option>
+          <option>Q2 2026</option>
+          <option>Q3 2026</option>
+          <option>Q4 2026</option>
+        </select>
+      </div>
+    </div>
+    <div class="meta-grid">
+      <div class="field-group">
+        <label>Your supervisor</label>
+        <select id="emp-supervisor">
+          <option value="">Select supervisor...</option>
+          <option data-email="WILL_EMAIL_PLACEHOLDER">Will Brinker</option>
+          <option data-email="JOE_PHILLIP_EMAIL_PLACEHOLDER">Joe Lynch / Phillip Jamison</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Your email (for confirmation)</label>
+        <input type="email" id="emp-email" placeholder="you@speckledtrout.com">
+      </div>
+    </div>
+
+    <!-- Core Values -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Core values</div>
+        <span class="section-badge badge-emp">Employee rates</span>
+      </div>
+      <table id="cv-table">
+        <thead>
+          <tr>
+            <th style="width:30%">Value</th>
+            <th style="width:25%">One word</th>
+            <th>Your rating</th>
+          </tr>
+        </thead>
+        <tbody id="cv-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Seats -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Seat(s) I sit in</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:8px;">
+        <span style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-tertiary)">Seat</span>
+        <span style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-tertiary)">Measurable</span>
+        <span style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-tertiary)">GWC</span>
+      </div>
+      <div id="seat-rows"></div>
+    </div>
+
+    <!-- Rock Review -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Rock review</div>
+        <span class="section-badge badge-emp">Employee rates</span>
+      </div>
+      <div class="section-note">Enter your Rocks and rate your completion (1–10).</div>
+      <div id="rock-rows"></div>
+      <button class="add-row" onclick="addRock()">+ Add rock</button>
+    </div>
+
+    <!-- Health Check -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Health check</div>
+        <span class="section-badge badge-emp">Employee rates</span>
+      </div>
+      <div id="health-blocks"></div>
+    </div>
+
+    <!-- Discussion Questions -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Discussion questions</div>
+      </div>
+      <div class="section-note">Answer at least 2. Your supervisor will see your responses before the meeting.</div>
+      <div id="q-list"></div>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <div class="btn-row">
+      <button class="primary" onclick="submitForm()">Submit to supervisor &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Success screen -->
+  <div class="success-screen" id="success-screen">
+    <div class="check">✓</div>
+    <h2>Submitted</h2>
+    <p>Your section is complete. Your supervisor has been notified and will review your responses before your meeting.</p>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+// Your SharePoint site ID — get this from the setup guide Step 1
+const SHAREPOINT_SITE_ID = 'a5fbdbc6-f6ec-4d83-9bed-260aaeb9809a';
+
+// Your SharePoint list ID for "5x5 Submissions" — get this from setup guide Step 2
+const SHAREPOINT_LIST_ID = '841b2bfb-e573-41c0-ad81-96100d308844';
+
+const SUPERVISORS = {
+  'Will Brinker': 'william@thespeckledtrout.com',
+  'Joe Lynch / Phillip Jamison': 'joe@thespeckledtrout.com'
+};
+
+// Supervisor view URL — full SharePoint URL to 5x5-supervisor.html
+const SUPERVISOR_FORM_URL = 'https://thespeckledtrout286.sharepoint.com/sites/Outfitters/Operations/01%20-%20Operations%20%26%20Management/EOS/Templates/5x5-supervisor.html';
+// ───────────────────────────────────────────────────────────────────────────
+
+const CORE_VALUES = ['Community','Integrity','Authenticity','Fun','Stewardship','Excellence'];
+
+const HEALTH_CATS = [
+  { key:'belonging', label:'Belonging', items:[
+    'I feel a genuine sense of belonging with my team and coworkers.',
+    'I can be myself at work without fear of judgment.',
+    'I have at least one coworker I trust and can talk to openly.'
+  ]},
+  { key:'inspired', label:'Inspired', items:[
+    'I am inspired by our company\'s purpose, vision, and values.',
+    'I believe the organization is heading in the right direction.',
+    'I am proud of the work we do and the impact it creates.'
+  ]},
+  { key:'trusted', label:'Trusted', items:[
+    'My leader communicates expectations clearly and follows through.',
+    'I feel comfortable giving upward feedback and voicing concerns.',
+    'I believe our leadership team is authentic and transparent.'
+  ]},
+  { key:'empowered', label:'Empowered', items:[
+    'I have the tools, training, and authority to do my job well.',
+    'I can make decisions that impact my work and outcomes.',
+    'I\'m encouraged to think independently and take initiative.'
+  ]},
+  { key:'accountable', label:'Accountable', items:[
+    'I understand my role and how success is measured.',
+    'My team holds each other accountable with respect and fairness.',
+    'I consistently receive feedback that helps me improve.'
+  ]},
+  { key:'measured', label:'Measured', items:[
+    'I know the key metrics that define success for my role.',
+    'Our team reviews measurable progress regularly.',
+    'I see how my work connects to company goals and results.'
+  ]},
+  { key:'balanced', label:'Balanced', items:[
+    'I can maintain a healthy work-life balance.',
+    'I feel supported in managing personal commitments.',
+    'I can recharge and return to work refreshed.'
+  ]}
+];
+
+const QUESTIONS = [
+  'What is your most important topic for us to discuss today?',
+  'What do you think you are doing well / succeeding in?',
+  'What is your biggest struggle?',
+  'Where / how do you think you can improve?',
+  'What is one thing leadership is doing well?',
+  'What is something leadership can improve on?',
+  'Is there anything you need from leadership to do your job better?',
+  'Do you see any inconsistencies at the company between the stated VVM and the way the company operates?'
+];
+
+let rockCount = 3;
+
+// Build core values table
+(function buildCV() {
+  const tb = document.getElementById('cv-body');
+  tb.innerHTML = CORE_VALUES.map((v, i) => `
+    <tr>
+      <td>${v}</td>
+      <td><input class="inline" id="cv-word-${i}" placeholder="one word"></td>
+      <td>
+        <div class="rating-row" id="cv-rate-${i}">
+          ${[1,2,3].map(n => `<button class="rating-btn" data-val="${n}" onclick="selectRating('cv-rate-${i}',${n})">${n}</button>`).join('')}
+        </div>
+      </td>
+    </tr>`).join('');
+})();
+
+// Build seats
+(function buildSeats() {
+  const wrap = document.getElementById('seat-rows');
+  wrap.innerHTML = [0,1,2,3].map(i => `
+    <div class="seat-row">
+      <input class="rock-name" id="seat-name-${i}" placeholder="Seat name">
+      <input class="rock-name" id="seat-meas-${i}" placeholder="Measurable">
+      <div class="gwc-checks">
+        <label><input type="checkbox" id="seat-g-${i}"> Get it?</label>
+        <label><input type="checkbox" id="seat-w-${i}"> Want it?</label>
+        <label><input type="checkbox" id="seat-c-${i}"> Capacity?</label>
+      </div>
+    </div>`).join('');
+})();
+
+// Build rocks
+function buildRocks() {
+  const wrap = document.getElementById('rock-rows');
+  wrap.innerHTML = Array.from({length: rockCount}, (_, i) => `
+    <div class="rock-row">
+      <input class="rock-name" id="rock-name-${i}" placeholder="Rock name">
+      <div class="rating-row" id="rock-rate-${i}">
+        ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="rating-btn" data-val="${n}" onclick="selectRating('rock-rate-${i}',${n})">${n}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+buildRocks();
+function addRock() { rockCount++; buildRocks(); }
+
+// Build health check
+(function buildHealth() {
+  const wrap = document.getElementById('health-blocks');
+  wrap.innerHTML = HEALTH_CATS.map(cat => `
+    <div class="health-block">
+      <div class="health-label">${cat.label}</div>
+      ${cat.items.map((item, i) => `
+        <div class="health-item">
+          <p>${item}</p>
+          <div class="scale-row" id="health-${cat.key}-${i}">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="scale-btn" data-val="${n}" onclick="selectScale('health-${cat.key}-${i}',${n})">${n}</button>`).join('')}
+          </div>
+        </div>`).join('')}
+      <div class="health-feedback">
+        <label>Feedback on your ${cat.label} ratings (optional)</label>
+        <input type="text" id="health-fb-${cat.key}" placeholder="Any additional context...">
+      </div>
+      <div class="divider"></div>
+    </div>`).join('');
+})();
+
+// Build questions
+(function buildQuestions() {
+  const wrap = document.getElementById('q-list');
+  wrap.innerHTML = QUESTIONS.map((q, i) => `
+    <div class="q-item">
+      <div class="q-top">
+        <input type="checkbox" id="q-check-${i}" onchange="toggleQ(${i})">
+        <label for="q-check-${i}">${q}</label>
+      </div>
+      <div class="q-answer" id="q-ans-${i}">
+        <textarea placeholder="Your response..."></textarea>
+      </div>
+    </div>`).join('');
+})();
+
+function toggleQ(i) {
+  const cb = document.getElementById(`q-check-${i}`);
+  document.getElementById(`q-ans-${i}`).style.display = cb.checked ? 'block' : 'none';
+}
+
+function selectRating(rowId, val) {
+  document.querySelectorAll(`#${rowId} .rating-btn`).forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.val) === val);
+  });
+}
+
+function selectScale(rowId, val) {
+  document.querySelectorAll(`#${rowId} .scale-btn`).forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.val) === val);
+  });
+}
+
+function getSelectedVal(containerId) {
+  const sel = document.querySelector(`#${containerId} .selected, #${containerId} .selected`);
+  return sel ? parseInt(sel.dataset.val) : null;
+}
+
+function collectData() {
+  const name = document.getElementById('emp-name').value.trim();
+  const entity = document.getElementById('emp-entity').value;
+  const quarter = document.getElementById('emp-quarter').value;
+  const supervisorName = document.getElementById('emp-supervisor').value;
+  const empEmail = document.getElementById('emp-email').value.trim();
+
+  const cv = CORE_VALUES.map((v, i) => ({
+    value: v,
+    word: document.getElementById(`cv-word-${i}`).value.trim(),
+    rating: getSelectedVal(`cv-rate-${i}`)
+  }));
+
+  const seats = [];
+  for (let i = 0; i < 4; i++) {
+    const seatName = document.getElementById(`seat-name-${i}`).value.trim();
+    if (!seatName) continue;
+    seats.push({
+      name: seatName,
+      measurable: document.getElementById(`seat-meas-${i}`).value.trim(),
+      getIt: document.getElementById(`seat-g-${i}`).checked,
+      wantIt: document.getElementById(`seat-w-${i}`).checked,
+      capacity: document.getElementById(`seat-c-${i}`).checked
+    });
+  }
+
+  const rocks = [];
+  for (let i = 0; i < rockCount; i++) {
+    const rockName = document.getElementById(`rock-name-${i}`)?.value.trim();
+    if (!rockName) continue;
+    rocks.push({ name: rockName, rating: getSelectedVal(`rock-rate-${i}`) });
+  }
+
+  const health = {};
+  HEALTH_CATS.forEach(cat => {
+    health[cat.key] = {
+      ratings: cat.items.map((_, i) => getSelectedVal(`health-${cat.key}-${i}`)),
+      feedback: document.getElementById(`health-fb-${cat.key}`).value.trim()
+    };
+  });
+
+  const questions = QUESTIONS.map((q, i) => {
+    const checked = document.getElementById(`q-check-${i}`).checked;
+    if (!checked) return null;
+    const ta = document.querySelector(`#q-ans-${i} textarea`);
+    return { question: q, answer: ta ? ta.value.trim() : '' };
+  }).filter(Boolean);
+
+  return { name, entity, quarter, supervisorName, empEmail, cv, seats, rocks, health, questions };
+}
+
+function validate(data) {
+  if (!data.name) return 'Please enter your name.';
+  if (!data.entity) return 'Please select your entity.';
+  if (!data.quarter) return 'Please select the quarter.';
+  if (!data.supervisorName) return 'Please select your supervisor.';
+  if (!data.empEmail) return 'Please enter your email address.';
+  if (data.questions.length < 2) return 'Please answer at least 2 discussion questions.';
+  return null;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function getAccessToken() {
+  // Uses the logged-in user's SharePoint session via fetch to Graph
+  // No token needed when hosted on SharePoint — credentials are passed automatically
+  return null;
+}
+
+async function submitForm() {
+  const data = collectData();
+  const err = validate(data);
+  if (err) { showError(err); return; }
+  document.getElementById('error-msg').style.display = 'none';
+
+  const supervisorEmail = SUPERVISORS[data.supervisorName] || '';
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const supervisorLink = `${SUPERVISOR_FORM_URL}?data=${encoded}`;
+
+  // Write to SharePoint list via Microsoft Graph API
+  // When hosted on SharePoint, the user's session authenticates automatically
+  const listItem = {
+    fields: {
+      Title: `${data.name} — ${data.quarter}`,
+      EmployeeName: data.name,
+      EmployeeEmail: data.empEmail,
+      SupervisorName: data.supervisorName,
+      SupervisorEmail: supervisorEmail,
+      Entity: data.entity,
+      Quarter: data.quarter,
+      SupervisorLink: supervisorLink,
+      FormDataJSON: JSON.stringify(data),
+      Status: 'Pending Supervisor Review',
+      SubmittedAt: new Date().toISOString()
+    }
+  };
+
+  try {
+    const response = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_SITE_ID}/lists/${SHAREPOINT_LIST_ID}/items`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(listItem),
+        credentials: 'include'
+      }
+    );
+    if (response.ok) {
+      const created = await response.json();
+      const itemId = created.id;
+      // Append the list item ID to the supervisor link so the supervisor form can update the right record
+      const finalSupLink = `${supervisorLink}&itemId=${itemId}`;
+      console.log('Supervisor link:', finalSupLink);
+    } else {
+      const errText = await response.text();
+      console.error('SharePoint list write failed:', errText);
+    }
+  } catch(e) {
+    console.warn('SharePoint list write failed (IDs not yet configured or running outside SharePoint):', e);
+  }
+
+  document.getElementById('main-form').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
