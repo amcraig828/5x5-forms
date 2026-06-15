@@ -507,6 +507,32 @@ async function submitForm() {
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   const supervisorLink = `${SUPERVISOR_FORM_URL}?data=${encoded}`;
 
+  // Calculate totals
+  const cvTotal = data.cv.reduce((sum, v) => sum + (v.rating || 0), 0);
+  const cvMax = data.cv.length * 3;
+
+  const rockTotal = data.rocks.reduce((sum, r) => sum + (r.rating || 0), 0);
+  const rockMax = data.rocks.length * 10;
+
+  let healthGrandTotal = 0;
+  let healthGrandMax = 0;
+  const healthCatTotals = HEALTH_CATS.map(cat => {
+    const ratings = data.health[cat.key]?.ratings || [];
+    const catTotal = ratings.reduce((sum, r) => sum + (r || 0), 0);
+    const catMax = cat.items.length * 10;
+    healthGrandTotal += catTotal;
+    healthGrandMax += catMax;
+    return `  ${cat.label}: ${catTotal}/${catMax}`;
+  }).join('\n');
+
+  const summaryLines = [
+    `Core Values total: ${cvTotal}/${cvMax}`,
+    rockMax > 0 ? `Rock Review total: ${rockTotal}/${rockMax}` : null,
+    `Health Check by category:`,
+    healthCatTotals,
+    `Health Check overall total: ${healthGrandTotal}/${healthGrandMax}`
+  ].filter(Boolean).join('\n');
+
   emailjs.init(EMAILJS_PUBLIC_KEY);
 
   const templateParams = {
@@ -515,7 +541,8 @@ async function submitForm() {
     employee_name:    data.name,
     employee_email:   data.empEmail || '',
     quarter:          data.quarter,
-    supervisor_link:  supervisorLink
+    supervisor_link:  supervisorLink,
+    employee_summary: summaryLines
   };
 
   try {
