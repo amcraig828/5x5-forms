@@ -210,7 +210,6 @@
     <div class="section-header">
       <div class="section-title">Health check</div>
       <span class="section-badge badge-emp">Employee</span>
-      <span class="section-badge badge-sup">Supervisor</span>
     </div>
     <div id="health-sup-blocks"></div>
   </div>
@@ -273,6 +272,11 @@ const EMAILJS_PUBLIC_KEY       = 'qbm0FluRDbLK432li';
 const EMAILJS_SERVICE_ID       = 'service_x2e8pjc';
 const EMAILJS_TEMPLATE_ID      = 'template_pz1sj12';
 const COMPLETED_RECIPIENT      = 'ashley@thespeckledtrout.com';
+
+const SUPERVISORS = {
+  'Will Brinker': { name: 'Will', email: 'william@thespeckledtrout.com' },
+  'Joe Lynch / Phillip Jamison': { name: 'Joe / Phillip', email: 'joe@thespeckledtrout.com' }
+};
 // ────────────────────────────────────────────────────────────────────────────
 
 const HEALTH_CATS = [
@@ -427,12 +431,6 @@ function buildHealth(health) {
                     ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="scale-btn${empRating===n?' emp-sel':''}" data-val="${n}" disabled>${n}</button>`).join('')}
                   </div>
                 </div>
-                <div>
-                  <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--sup-green);margin-bottom:6px">Supervisor</div>
-                  <div class="scale-row" id="sup-health-${cat.key}-${i}">
-                    ${[1,2,3,4,5,6,7,8,9,10].map(n => `<button class="scale-btn" data-val="${n}" onclick="selectSupScale('sup-health-${cat.key}-${i}',${n})">${n}</button>`).join('')}
-                  </div>
-                </div>
               </div>
             </div>`;
         }).join('')}
@@ -473,10 +471,6 @@ function addDevRow() { devRowCount++; buildDevRows(); }
 function collectSupData() {
   const cvRatings = empData.cv.map((v, i) => getSelected(`sup-cv-${i}`, 'sup-sel'));
   const rockRatings = empData.rocks.map((r, i) => getSelected(`sup-rock-${i}`, 'sup-sel'));
-  const healthRatings = {};
-  HEALTH_CATS.forEach(cat => {
-    healthRatings[cat.key] = empData.health[cat.key]?.ratings?.map((_, i) => getSelected(`sup-health-${cat.key}-${i}`, 'sup-sel'));
-  });
   const qNotes = (empData.questions || []).map((q, i) => ({
     question: q.question,
     empAnswer: q.answer,
@@ -488,7 +482,7 @@ function collectSupData() {
   })).filter(d => d.area);
   const overallNotes = document.getElementById('sup-overall-notes').value.trim();
 
-  return { cvRatings, rockRatings, healthRatings, qNotes, devAreas, overallNotes };
+  return { cvRatings, rockRatings, qNotes, devAreas, overallNotes };
 }
 
 async function saveToSharePoint() {
@@ -511,9 +505,8 @@ async function saveToSharePoint() {
 
   const health = HEALTH_CATS.map(cat => {
     const empH = empData.health?.[cat.key];
-    const supR = supData.healthRatings?.[cat.key];
     const rows = cat.items.map((item, i) =>
-      `  ${item}\n  Employee: ${empH?.ratings?.[i] || '—'} | Supervisor: ${supR?.[i] || '—'}`
+      `  ${item}\n  Employee: ${empH?.ratings?.[i] || '—'}`
     ).join('\n');
     const fb = empH?.feedback ? `\n  Feedback: ${empH.feedback}` : '';
     return `${cat.label}:\n${rows}${fb}`;
@@ -536,14 +529,17 @@ async function saveToSharePoint() {
 `=== AREAS FOR DEVELOPMENT ===\n${devAreas}\n\n` +
 `=== SUPERVISOR OVERALL NOTES ===\n${supData.overallNotes || '—'}`;
 
+  const sup = SUPERVISORS[empData.supervisorName] || {};
+
   emailjs.init(EMAILJS_PUBLIC_KEY);
 
   const templateParams = {
-    employee_name:   empData.name || '—',
-    supervisor_name: empData.supervisorName || '—',
-    quarter:         empData.quarter || '—',
-    entity:          empData.entity || '—',
-    completed_data:  completedData
+    employee_name:    empData.name || '—',
+    supervisor_name:  empData.supervisorName || '—',
+    supervisor_email: sup.email || COMPLETED_RECIPIENT,
+    quarter:          empData.quarter || '—',
+    entity:           empData.entity || '—',
+    completed_data:   completedData
   };
 
   try {
