@@ -542,23 +542,23 @@ async function saveToSharePoint() {
 
   // Rock names for individual field lines
   const rockFields = (empData.rocks || []).map((r, i) =>
-    `FIELD:rock_${i+1}_name|${r.name}\nFIELD:rock_${i+1}_emp|${r.rating || 0}\nFIELD:rock_${i+1}_sup|${supData.rockRatings[i] || 0}`
-  ).join('\n');
+    `|||FIELD:rock_${i+1}_name|${r.name}|||FIELD:rock_${i+1}_emp|${r.rating || 0}|||FIELD:rock_${i+1}_sup|${supData.rockRatings[i] || 0}`
+  ).join('');
 
   // CV individual fields
   const cvFields = (empData.cv || []).map((v, i) =>
-    `FIELD:cv_${v.value.toLowerCase()}_word|${v.word || ''}\nFIELD:cv_${v.value.toLowerCase()}_emp|${v.rating || 0}\nFIELD:cv_${v.value.toLowerCase()}_sup|${supData.cvRatings[i] || 0}`
-  ).join('\n');
+    `|||FIELD:cv_${v.value.toLowerCase()}_word|${v.word || ''}|||FIELD:cv_${v.value.toLowerCase()}_emp|${v.rating || 0}|||FIELD:cv_${v.value.toLowerCase()}_sup|${supData.cvRatings[i] || 0}`
+  ).join('');
 
   // Discussion question fields
   const qFields = (empData.questions || []).map((q, i) =>
-    `FIELD:q${i+1}|${(q.answer || '').replace(/\|/g, '/').replace(/\n/g, ' ')}`
-  ).join('\n');
+    `|||FIELD:q${i+1}|${(q.answer || '').replace(/\|/g, '/').replace(/\n/g, ' ')}`
+  ).join('');
 
   // Dev area fields
   const devFields = supData.devAreas.map((d, i) =>
-    `FIELD:dev_${i+1}_area|${d.area}\nFIELD:dev_${i+1}_plan|${d.plan}`
-  ).join('\n');
+    `|||FIELD:dev_${i+1}_area|${d.area}|||FIELD:dev_${i+1}_plan|${d.plan}`
+  ).join('');
 
   const completedData =
 `5×5×5 Completed Review
@@ -569,31 +569,7 @@ Entity: ${empData.entity || '—'}
 Completed: ${new Date().toLocaleDateString()}
 
 --- MACHINE READABLE DATA (do not edit below this line) ---
-FIELD:employee_name|${empData.name || ''}
-FIELD:entity|${empData.entity || ''}
-FIELD:quarter|${empData.quarter || ''}
-FIELD:supervisor_name|${empData.supervisorName || ''}
-FIELD:date_completed|${new Date().toLocaleDateString()}
-FIELD:cv_emp_total|${cvEmpTotal}
-FIELD:cv_sup_total|${cvSupTotal}
-FIELD:cv_max|${cvMax}
-${cvFields}
-FIELD:rocks_emp_total|${rockEmpTotal}
-FIELD:rocks_sup_total|${rockSupTotal}
-FIELD:rocks_max|${rockMax}
-${rockFields}
-FIELD:health_total|${healthGrandTotal}
-FIELD:health_max|${healthGrandMax}
-FIELD:belonging|${healthCatTotals.belonging.total}
-FIELD:inspired|${healthCatTotals.inspired.total}
-FIELD:trusted|${healthCatTotals.trusted.total}
-FIELD:empowered|${healthCatTotals.empowered.total}
-FIELD:accountable|${healthCatTotals.accountable.total}
-FIELD:measured|${healthCatTotals.measured.total}
-FIELD:balanced|${healthCatTotals.balanced.total}
-${qFields}
-${devFields}
-FIELD:supervisor_notes|${(supData.overallNotes || '').replace(/\|/g, '/').replace(/\n/g, ' ')}
+FIELD:employee_name|${empData.name || ''}|||FIELD:entity|${empData.entity || ''}|||FIELD:quarter|${empData.quarter || ''}|||FIELD:supervisor_name|${empData.supervisorName || ''}|||FIELD:date_completed|${new Date().toLocaleDateString()}|||FIELD:cv_emp_total|${cvEmpTotal}|||FIELD:cv_sup_total|${cvSupTotal}|||FIELD:cv_max|${cvMax}${cvFields}|||FIELD:rocks_emp_total|${rockEmpTotal}|||FIELD:rocks_sup_total|${rockSupTotal}|||FIELD:rocks_max|${rockMax}${rockFields}|||FIELD:health_total|${healthGrandTotal}|||FIELD:health_max|${healthGrandMax}|||FIELD:belonging|${healthCatTotals.belonging.total}|||FIELD:inspired|${healthCatTotals.inspired.total}|||FIELD:trusted|${healthCatTotals.trusted.total}|||FIELD:empowered|${healthCatTotals.empowered.total}|||FIELD:accountable|${healthCatTotals.accountable.total}|||FIELD:measured|${healthCatTotals.measured.total}|||FIELD:balanced|${healthCatTotals.balanced.total}${qFields}${devFields}|||FIELD:supervisor_notes|${(supData.overallNotes || '').replace(/\|/g, '/').replace(/\n/g, ' ')}
 --- END MACHINE READABLE DATA ---
 
 === CORE VALUES ===
