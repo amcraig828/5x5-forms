@@ -488,48 +488,49 @@ function collectSupData() {
 async function saveToSharePoint() {
   const supData = collectSupData();
 
-  // Build a readable summary for the email body
-  const cv = (empData.cv || []).map((v, i) => {
-    const supRating = supData.cvRatings[i];
-    return `${v.value}: Employee word: ${v.word || '—'} | Employee rating: ${v.rating || '—'}/3 | Supervisor rating: ${supRating || '—'}/3`;
-  }).join('\n');
-
+  // Totals
   const cvEmpTotal = (empData.cv || []).reduce((sum, v) => sum + (v.rating || 0), 0);
   const cvSupTotal = supData.cvRatings.reduce((sum, r) => sum + (r || 0), 0);
   const cvMax = (empData.cv || []).length * 3;
-  const cvTotals = `Total — Employee: ${cvEmpTotal}/${cvMax} | Supervisor: ${cvSupTotal}/${cvMax}`;
-
-  const rocks = (empData.rocks || []).map((r, i) => {
-    const supRating = supData.rockRatings[i];
-    return `${r.name}: Employee: ${r.rating || '—'}/10 | Supervisor: ${supRating || '—'}/10`;
-  }).join('\n');
 
   const rockEmpTotal = (empData.rocks || []).reduce((sum, r) => sum + (r.rating || 0), 0);
   const rockSupTotal = supData.rockRatings.reduce((sum, r) => sum + (r || 0), 0);
   const rockMax = (empData.rocks || []).length * 10;
-  const rockTotals = rockMax > 0
-    ? `Total — Employee: ${rockEmpTotal}/${rockMax} | Supervisor: ${rockSupTotal}/${rockMax}`
-    : '';
-
-  const seats = (empData.seats || []).map(s =>
-    `${s.name} — ${s.measurable || 'no measurable'} | Get it: ${s.getIt ? 'Yes' : 'No'} | Want it: ${s.wantIt ? 'Yes' : 'No'} | Capacity: ${s.capacity ? 'Yes' : 'No'}`
-  ).join('\n');
 
   let healthGrandTotal = 0;
   let healthGrandMax = 0;
-  const health = HEALTH_CATS.map(cat => {
+  const healthCatTotals = {};
+  HEALTH_CATS.forEach(cat => {
+    const empH = empData.health?.[cat.key];
+    const catTotal = (empH?.ratings || []).reduce((sum, r) => sum + (r || 0), 0);
+    const catMax = cat.items.length * 10;
+    healthCatTotals[cat.key] = { total: catTotal, max: catMax, feedback: empH?.feedback || '' };
+    healthGrandTotal += catTotal;
+    healthGrandMax += catMax;
+  });
+
+  // Individual health check item scores
+  const healthItemLines = HEALTH_CATS.map(cat => {
     const empH = empData.health?.[cat.key];
     const rows = cat.items.map((item, i) =>
       `  ${item}\n  Employee: ${empH?.ratings?.[i] || '—'}`
     ).join('\n');
-    const fb = empH?.feedback ? `\n  Feedback: ${empH.feedback}` : '';
-    const catTotal = (empH?.ratings || []).reduce((sum, r) => sum + (r || 0), 0);
-    const catMax = cat.items.length * 10;
-    healthGrandTotal += catTotal;
-    healthGrandMax += catMax;
-    return `${cat.label}:\n${rows}${fb}\n  Category total: ${catTotal}/${catMax}`;
+    const fb = healthCatTotals[cat.key].feedback ? `\n  Feedback: ${healthCatTotals[cat.key].feedback}` : '';
+    return `${cat.label}:\n${rows}${fb}\n  Category total: ${healthCatTotals[cat.key].total}/${healthCatTotals[cat.key].max}`;
   }).join('\n\n');
-  const healthTotals = `Overall Health Check total: ${healthGrandTotal}/${healthGrandMax}`;
+
+  // Readable sections
+  const cv = (empData.cv || []).map((v, i) =>
+    `${v.value}: Employee word: ${v.word || '—'} | Employee: ${v.rating || '—'}/3 | Supervisor: ${supData.cvRatings[i] || '—'}/3`
+  ).join('\n');
+
+  const rocks = (empData.rocks || []).map((r, i) =>
+    `${r.name}: Employee: ${r.rating || '—'}/10 | Supervisor: ${supData.rockRatings[i] || '—'}/10`
+  ).join('\n');
+
+  const seats = (empData.seats || []).map(s =>
+    `${s.name} — ${s.measurable || 'no measurable'} | Get it: ${s.getIt ? 'Yes' : 'No'} | Want it: ${s.wantIt ? 'Yes' : 'No'} | Capacity: ${s.capacity ? 'Yes' : 'No'}`
+  ).join('\n');
 
   const questions = (empData.questions || []).map(q =>
     `Q: ${q.question}\nA: ${q.answer || '—'}`
@@ -539,14 +540,86 @@ async function saveToSharePoint() {
     ? supData.devAreas.map(d => `${d.area}: ${d.plan}`).join('\n')
     : '—';
 
+  // Rock names for individual field lines
+  const rockFields = (empData.rocks || []).map((r, i) =>
+    `FIELD:rock_${i+1}_name|${r.name}\nFIELD:rock_${i+1}_emp|${r.rating || 0}\nFIELD:rock_${i+1}_sup|${supData.rockRatings[i] || 0}`
+  ).join('\n');
+
+  // CV individual fields
+  const cvFields = (empData.cv || []).map((v, i) =>
+    `FIELD:cv_${v.value.toLowerCase()}_word|${v.word || ''}\nFIELD:cv_${v.value.toLowerCase()}_emp|${v.rating || 0}\nFIELD:cv_${v.value.toLowerCase()}_sup|${supData.cvRatings[i] || 0}`
+  ).join('\n');
+
+  // Discussion question fields
+  const qFields = (empData.questions || []).map((q, i) =>
+    `FIELD:q${i+1}|${(q.answer || '').replace(/\|/g, '/').replace(/\n/g, ' ')}`
+  ).join('\n');
+
+  // Dev area fields
+  const devFields = supData.devAreas.map((d, i) =>
+    `FIELD:dev_${i+1}_area|${d.area}\nFIELD:dev_${i+1}_plan|${d.plan}`
+  ).join('\n');
+
   const completedData =
-`=== CORE VALUES ===\n${cv}\n${cvTotals}\n\n` +
-`=== SEATS ===\n${seats || '—'}\n\n` +
-`=== ROCK REVIEW ===\n${rocks || '—'}${rockTotals ? '\n' + rockTotals : ''}\n\n` +
-`=== HEALTH CHECK ===\n${health}\n\n${healthTotals}\n\n` +
-`=== DISCUSSION QUESTIONS ===\n${questions || '—'}\n\n` +
-`=== AREAS FOR DEVELOPMENT ===\n${devAreas}\n\n` +
-`=== SUPERVISOR OVERALL NOTES ===\n${supData.overallNotes || '—'}`;
+`5×5×5 Completed Review
+Employee: ${empData.name || '—'}
+Quarter: ${empData.quarter || '—'}
+Supervisor: ${empData.supervisorName || '—'}
+Entity: ${empData.entity || '—'}
+Completed: ${new Date().toLocaleDateString()}
+
+--- MACHINE READABLE DATA (do not edit below this line) ---
+FIELD:employee_name|${empData.name || ''}
+FIELD:entity|${empData.entity || ''}
+FIELD:quarter|${empData.quarter || ''}
+FIELD:supervisor_name|${empData.supervisorName || ''}
+FIELD:date_completed|${new Date().toLocaleDateString()}
+FIELD:cv_emp_total|${cvEmpTotal}
+FIELD:cv_sup_total|${cvSupTotal}
+FIELD:cv_max|${cvMax}
+${cvFields}
+FIELD:rocks_emp_total|${rockEmpTotal}
+FIELD:rocks_sup_total|${rockSupTotal}
+FIELD:rocks_max|${rockMax}
+${rockFields}
+FIELD:health_total|${healthGrandTotal}
+FIELD:health_max|${healthGrandMax}
+FIELD:belonging|${healthCatTotals.belonging.total}
+FIELD:inspired|${healthCatTotals.inspired.total}
+FIELD:trusted|${healthCatTotals.trusted.total}
+FIELD:empowered|${healthCatTotals.empowered.total}
+FIELD:accountable|${healthCatTotals.accountable.total}
+FIELD:measured|${healthCatTotals.measured.total}
+FIELD:balanced|${healthCatTotals.balanced.total}
+${qFields}
+${devFields}
+FIELD:supervisor_notes|${(supData.overallNotes || '').replace(/\|/g, '/').replace(/\n/g, ' ')}
+--- END MACHINE READABLE DATA ---
+
+=== CORE VALUES ===
+${cv}
+Total — Employee: ${cvEmpTotal}/${cvMax} | Supervisor: ${cvSupTotal}/${cvMax}
+
+=== SEATS ===
+${seats || '—'}
+
+=== ROCK REVIEW ===
+${rocks || '—'}
+${rockMax > 0 ? `Total — Employee: ${rockEmpTotal}/${rockMax} | Supervisor: ${rockSupTotal}/${rockMax}` : ''}
+
+=== HEALTH CHECK ===
+${healthItemLines}
+
+Overall Health Check total: ${healthGrandTotal}/${healthGrandMax}
+
+=== DISCUSSION QUESTIONS ===
+${questions || '—'}
+
+=== AREAS FOR DEVELOPMENT ===
+${devAreas}
+
+=== SUPERVISOR OVERALL NOTES ===
+${supData.overallNotes || '—'}`;
 
   const sup = SUPERVISORS[empData.supervisorName] || {};
 
