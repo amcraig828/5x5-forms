@@ -157,18 +157,21 @@
           <option>The Speckled Trout Outfitters</option>
         </select>
       </div>
-      <div class="field-group">
         <label>Quarter</label>
         <select id="emp-quarter">
-          <option value="">Select quarter...</option>
-          <option>Q1 2026</option>
-          <option>Q2 2026</option>
-          <option>Q3 2026</option>
-          <option>Q4 2026</option>
+          <option value="">Select...</option>
+          <option>Q1</option>
+          <option>Q2</option>
+          <option>Q3</option>
+          <option>Q4</option>
         </select>
       </div>
+      <div class="field-group">
+        <label>Year</label>
+        <input type="text" id="emp-year" placeholder="e.g. 2026" maxlength="4">
+      </div>
     </div>
-    <div class="meta-grid">
+    <div class="meta-grid three">
       <div class="field-group">
         <label>Your supervisor</label>
         <select id="emp-supervisor">
@@ -433,7 +436,9 @@ function getSelectedVal(containerId) {
 function collectData() {
   const name = document.getElementById('emp-name').value.trim();
   const entity = document.getElementById('emp-entity').value;
-  const quarter = document.getElementById('emp-quarter').value;
+  const quarterVal = document.getElementById('emp-quarter').value;
+  const yearVal = document.getElementById('emp-year').value.trim();
+  const quarter = quarterVal && yearVal ? `${quarterVal} ${yearVal}` : '';
   const supervisorName = document.getElementById('emp-supervisor').value;
   const empEmail = document.getElementById('emp-email').value.trim();
 
@@ -484,7 +489,7 @@ function collectData() {
 function validate(data) {
   if (!data.name) return 'Please enter your name.';
   if (!data.entity) return 'Please select your entity.';
-  if (!data.quarter) return 'Please select the quarter.';
+  if (!data.quarter) return 'Please select a quarter and enter a year.';
   if (!data.supervisorName) return 'Please select your supervisor.';
   if (!data.empEmail) return 'Please enter your email address.';
   if (data.questions.length < 2) return 'Please answer at least 2 discussion questions.';
