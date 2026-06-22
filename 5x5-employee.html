@@ -229,6 +229,54 @@
       <button class="add-row" onclick="addRock()">+ Add rock</button>
     </div>
 
+    <!-- Rock Documents -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Rock documents</div>
+      </div>
+      <div class="section-note">Paste SharePoint links to your rock documents below. If a document isn't available, check the box and explain why.</div>
+
+      <div style="display:flex;flex-direction:column;gap:1.25rem;margin-top:0.5rem;">
+
+        <!-- Current Quarter Rocks -->
+        <div>
+          <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-secondary);margin-bottom:6px;">Current quarter rocks <span style="color:var(--warn)">*</span></div>
+          <input class="rock-name" id="rock-doc-current" placeholder="Paste SharePoint link...">
+        </div>
+
+        <!-- Current Quarter Rock Completion -->
+        <div>
+          <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-secondary);margin-bottom:6px;">Current quarter rock completion <span style="color:var(--warn)">*</span></div>
+          <div id="rock-completion-wrap">
+            <input class="rock-name" id="rock-doc-completion" placeholder="Paste SharePoint link...">
+          </div>
+          <div style="margin-top:6px;display:flex;gap:8px;align-items:center;">
+            <input type="checkbox" id="rock-completion-na" onchange="toggleRockNA('completion')">
+            <label for="rock-completion-na" style="font-family:Arial,sans-serif;font-size:12px;color:var(--ink-secondary);cursor:pointer;">Not available yet</label>
+          </div>
+          <div id="rock-completion-reason" style="display:none;margin-top:6px;">
+            <input class="rock-name" id="rock-completion-reason-text" placeholder="Reason not available...">
+          </div>
+        </div>
+
+        <!-- Next Quarter Rocks -->
+        <div>
+          <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-secondary);margin-bottom:6px;">Next quarter rocks <span style="color:var(--warn)">*</span></div>
+          <div id="rock-next-wrap">
+            <input class="rock-name" id="rock-doc-next" placeholder="Paste SharePoint link...">
+          </div>
+          <div style="margin-top:6px;display:flex;gap:8px;align-items:center;">
+            <input type="checkbox" id="rock-next-na" onchange="toggleRockNA('next')">
+            <label for="rock-next-na" style="font-family:Arial,sans-serif;font-size:12px;color:var(--ink-secondary);cursor:pointer;">Not available yet</label>
+          </div>
+          <div id="rock-next-reason" style="display:none;margin-top:6px;">
+            <input class="rock-name" id="rock-next-reason-text" placeholder="Reason not available...">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Health Check -->
     <div class="section">
       <div class="section-header">
@@ -452,6 +500,19 @@ function getSelectedVal(containerId) {
   return sel ? parseInt(sel.dataset.val) : null;
 }
 
+function toggleRockNA(type) {
+  const cb = document.getElementById(`rock-${type}-na`);
+  const linkWrap = document.getElementById(`rock-${type}-wrap`);
+  const reasonWrap = document.getElementById(`rock-${type}-reason`);
+  if (cb.checked) {
+    linkWrap.style.display = 'none';
+    reasonWrap.style.display = 'block';
+  } else {
+    linkWrap.style.display = 'block';
+    reasonWrap.style.display = 'none';
+  }
+}
+
 function collectData() {
   const name = document.getElementById('emp-name').value.trim();
   const entity = document.getElementById('emp-entity').value;
@@ -487,6 +548,19 @@ function collectData() {
     rocks.push({ name: rockName, rating: getSelectedVal(`rock-rate-${i}`) });
   }
 
+  // Rock documents
+  const rockDocCurrent = document.getElementById('rock-doc-current').value.trim();
+
+  const completionNA = document.getElementById('rock-completion-na').checked;
+  const rockDocCompletion = completionNA
+    ? `N/A — ${document.getElementById('rock-completion-reason-text').value.trim()}`
+    : document.getElementById('rock-doc-completion').value.trim();
+
+  const nextNA = document.getElementById('rock-next-na').checked;
+  const rockDocNext = nextNA
+    ? `N/A — ${document.getElementById('rock-next-reason-text').value.trim()}`
+    : document.getElementById('rock-doc-next').value.trim();
+
   const health = {};
   HEALTH_CATS.forEach(cat => {
     health[cat.key] = {
@@ -502,7 +576,7 @@ function collectData() {
     return { question: q, answer: ta ? ta.value.trim() : '' };
   }).filter(Boolean);
 
-  return { name, entity, quarter, supervisorName, empEmail, cv, seats, rocks, health, questions };
+  return { name, entity, quarter, supervisorName, empEmail, cv, seats, rocks, rockDocCurrent, rockDocCompletion, rockDocNext, health, questions };
 }
 
 function validate(data) {
@@ -511,6 +585,13 @@ function validate(data) {
   if (!data.quarter) return 'Please select a quarter and enter a year.';
   if (!data.supervisorName) return 'Please select your supervisor.';
   if (!data.empEmail) return 'Please enter your email address.';
+  if (!data.rockDocCurrent) return 'Please paste a link to your current quarter Rocks.';
+  const completionNA = document.getElementById('rock-completion-na').checked;
+  if (!completionNA && !data.rockDocCompletion) return 'Please paste a link to your Rock Completion or indicate why it\'s not available.';
+  if (completionNA && data.rockDocCompletion === 'N/A — ') return 'Please explain why your Rock Completion is not available.';
+  const nextNA = document.getElementById('rock-next-na').checked;
+  if (!nextNA && !data.rockDocNext) return 'Please paste a link to your Next Quarter Rocks or indicate why they\'re not available.';
+  if (nextNA && data.rockDocNext === 'N/A — ') return 'Please explain why your Next Quarter Rocks are not available.';
   if (data.questions.length < 2) return 'Please answer at least 2 discussion questions.';
   return null;
 }
@@ -555,7 +636,12 @@ async function submitForm() {
     rockMax > 0 ? `Rock Review total: ${rockTotal}/${rockMax}` : null,
     `Health Check by category:`,
     healthCatTotals,
-    `Health Check overall total: ${healthGrandTotal}/${healthGrandMax}`
+    `Health Check overall total: ${healthGrandTotal}/${healthGrandMax}`,
+    ``,
+    `Rock documents:`,
+    `Current quarter rocks: ${data.rockDocCurrent}`,
+    `Rock completion: ${data.rockDocCompletion}`,
+    `Next quarter rocks: ${data.rockDocNext}`
   ].filter(Boolean).join('\n');
 
   emailjs.init(EMAILJS_PUBLIC_KEY);
