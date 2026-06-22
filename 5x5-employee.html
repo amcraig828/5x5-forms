@@ -374,7 +374,25 @@ function buildRocks() {
     </div>`).join('');
 }
 buildRocks();
-function addRock() { rockCount++; buildRocks(); }
+
+function addRock() {
+  // Save existing values before adding new row
+  const savedNames = [];
+  const savedRatings = [];
+  for (let i = 0; i < rockCount; i++) {
+    savedNames.push(document.getElementById(`rock-name-${i}`)?.value || '');
+    const selected = document.querySelector(`#rock-rate-${i} .selected`);
+    savedRatings.push(selected ? parseInt(selected.dataset.val) : null);
+  }
+  rockCount++;
+  buildRocks();
+  // Restore saved values
+  for (let i = 0; i < rockCount - 1; i++) {
+    const nameEl = document.getElementById(`rock-name-${i}`);
+    if (nameEl) nameEl.value = savedNames[i] || '';
+    if (savedRatings[i]) selectRating(`rock-rate-${i}`, savedRatings[i]);
+  }
+}
 
 // Build health check
 (function buildHealth() {
