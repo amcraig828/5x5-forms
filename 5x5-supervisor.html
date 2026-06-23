@@ -329,12 +329,64 @@ const HEALTH_CATS = [
 let empData = null;
 let devRowCount = 3;
 
+const CORE_VALUES_LIST = ['Community','Integrity','Authenticity','Fun','Stewardship','Excellence'];
+const HEALTH_CATS_KEYS = ['belonging','inspired','trusted','empowered','accountable','measured','balanced'];
+const QUESTIONS_LIST = [
+  'What is your most important topic for us to discuss today?',
+  'What do you think you are doing well / succeeding in?',
+  'What is your biggest struggle?',
+  'Where / how do you think you can improve?',
+  'What is one thing leadership is doing well?',
+  'What is something leadership can improve on?',
+  'Is there anything you need from leadership to do your job better?',
+  'Do you see any inconsistencies at the company between the stated VVM and the way the company operates?',
+  'Define or describe what success looks like to you.'
+];
+
 function loadEmployeeData() {
   const params = new URLSearchParams(window.location.search);
   const encoded = params.get('data');
   if (!encoded) return null;
   try {
-    return JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    const slim = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+
+    // Detect if it's the old full format or new slim format
+    if (slim.name !== undefined) return slim; // old format — use as-is
+
+    // Expand slim format back to full structure
+    const health = {};
+    HEALTH_CATS_KEYS.forEach((key, i) => {
+      health[key] = {
+        ratings: slim.h[i] || [],
+        feedback: slim.hf[i] || ''
+      };
+    });
+
+    return {
+      name:         slim.n,
+      entity:       slim.e,
+      quarter:      slim.q,
+      supervisorName: slim.s,
+      empEmail:     slim.em,
+      cv:           CORE_VALUES_LIST.map((val, i) => ({
+                      value: val,
+                      word: slim.cv[i]?.w || '',
+                      rating: slim.cv[i]?.r || null
+                    })),
+      seats:        (slim.se || []).map(s => ({
+                      name: s.n, measurable: s.m,
+                      getIt: !!s.g, wantIt: !!s.w, capacity: !!s.c
+                    })),
+      rocks:        (slim.ro || []).map(r => ({ name: r.n, rating: r.r })),
+      rockDocCurrent:    slim.rd?.[0] || '',
+      rockDocCompletion: slim.rd?.[1] || '',
+      rockDocNext:       slim.rd?.[2] || '',
+      health,
+      questions:    (slim.qs || []).map(q => ({
+                      question: QUESTIONS_LIST[q.i] || `Question ${q.i + 1}`,
+                      answer: q.a
+                    }))
+    };
   } catch(e) {
     console.error('Failed to decode employee data', e);
     return null;

@@ -241,7 +241,16 @@
         <!-- Current Quarter Rocks -->
         <div>
           <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-secondary);margin-bottom:6px;">Current quarter rocks <span style="color:var(--warn)">*</span></div>
-          <input class="rock-name" id="rock-doc-current" placeholder="Paste SharePoint link...">
+      <div class="field-group" style="margin-bottom:0">
+        <label>Current quarter rocks <span style="color:var(--warn)">*</span></label>
+        <input class="rock-name" id="rock-doc-current-1" placeholder="Rock 1 — paste SharePoint link...">
+      </div>
+      <div style="margin-top:6px">
+        <input class="rock-name" id="rock-doc-current-2" placeholder="Rock 2 — paste SharePoint link (if applicable)">
+      </div>
+      <div style="margin-top:6px">
+        <input class="rock-name" id="rock-doc-current-3" placeholder="Rock 3 — paste SharePoint link (if applicable)">
+      </div>
         </div>
 
         <!-- Current Quarter Rock Completion -->
@@ -549,7 +558,10 @@ function collectData() {
   }
 
   // Rock documents
-  const rockDocCurrent = document.getElementById('rock-doc-current').value.trim();
+  const rockDocCurrent1 = document.getElementById('rock-doc-current-1').value.trim();
+  const rockDocCurrent2 = document.getElementById('rock-doc-current-2').value.trim();
+  const rockDocCurrent3 = document.getElementById('rock-doc-current-3').value.trim();
+  const rockDocCurrent = [rockDocCurrent1, rockDocCurrent2, rockDocCurrent3].filter(Boolean).join(' | ');
 
   const completionNA = document.getElementById('rock-completion-na').checked;
   const rockDocCompletion = completionNA
@@ -585,7 +597,7 @@ function validate(data) {
   if (!data.quarter) return 'Please select a quarter and enter a year.';
   if (!data.supervisorName) return 'Please select your supervisor.';
   if (!data.empEmail) return 'Please enter your email address.';
-  if (!data.rockDocCurrent) return 'Please paste a link to your current quarter Rocks.';
+  if (!document.getElementById('rock-doc-current-1').value.trim()) return 'Please paste a link to your current quarter Rock 1.';
   const completionNA = document.getElementById('rock-completion-na').checked;
   if (!completionNA && !data.rockDocCompletion) return 'Please paste a link to your Rock Completion or indicate why it\'s not available.';
   if (completionNA && data.rockDocCompletion === 'N/A — ') return 'Please explain why your Rock Completion is not available.';
@@ -610,7 +622,22 @@ async function submitForm() {
   document.getElementById('error-msg').style.display = 'none';
 
   const sup = SUPERVISORS[data.supervisorName] || {};
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  // Compact encoding — strips question text (supervisor form has it hardcoded) to keep URL short
+  const slim = {
+    n:  data.name,
+    e:  data.entity,
+    q:  data.quarter,
+    s:  data.supervisorName,
+    em: data.empEmail,
+    cv: data.cv.map(v => ({ w: v.word, r: v.rating })),
+    se: data.seats.map(s => ({ n: s.name, m: s.measurable, g: s.getIt ? 1 : 0, w: s.wantIt ? 1 : 0, c: s.capacity ? 1 : 0 })),
+    ro: data.rocks.map(r => ({ n: r.name, r: r.rating })),
+    rd: [data.rockDocCurrent || '', data.rockDocCompletion || '', data.rockDocNext || ''],
+    h:  Object.values(data.health).map(v => v.ratings),
+    hf: Object.values(data.health).map(v => v.feedback),
+    qs: data.questions.map((q, i) => ({ i: i, a: q.answer }))
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(slim))));
   const supervisorLink = `${SUPERVISOR_FORM_URL}?data=${encoded}`;
 
   // Calculate totals
