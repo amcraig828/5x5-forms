@@ -654,72 +654,167 @@ async function saveToSharePoint() {
     `|||FIELD:dev_${i+1}_area|${d.area}|||FIELD:dev_${i+1}_plan|${d.plan}`
   ).join('');
 
+  // Helper: render a rating bar as text stars for email
+  const ratingBar = (val, max) => {
+    if (!val) return '—';
+    return '●'.repeat(val) + '○'.repeat(max - val) + ` (${val}/${max})`;
+  };
+
+  // Build formatted HTML email sections
+  const cvRows = (empData.cv || []).map((v, i) => `
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;">${v.value}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#5a5a55;">${v.word || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a3a5c;">${ratingBar(v.rating, 3)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#2f6465;">${ratingBar(supData.cvRatings[i], 3)}</td>
+    </tr>`).join('');
+
+  const rockRows = (empData.rocks || []).map((r, i) => `
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;">${r.name}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a3a5c;">${ratingBar(r.rating, 10)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#2f6465;">${ratingBar(supData.rockRatings[i], 10)}</td>
+    </tr>`).join('');
+
+  const seatRows = (empData.seats || []).map(s => `
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;"><strong>${s.name}</strong>${s.measurable ? ` — ${s.measurable}` : ''}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;">
+        ${s.getIt ? '<span style="background:#e8f0ec;color:#2f6465;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">Gets it</span>' : ''}
+        ${s.wantIt ? '<span style="background:#e8f0ec;color:#2f6465;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">Wants it</span>' : ''}
+        ${s.capacity ? '<span style="background:#e8f0ec;color:#2f6465;padding:2px 6px;border-radius:3px;font-size:11px;">Capacity</span>' : ''}
+      </td>
+    </tr>`).join('');
+
+  const healthRows = HEALTH_CATS.map(cat => {
+    const h = empData.health?.[cat.key];
+    const catTotal = healthCatTotals[cat.key].total;
+    const catMax = healthCatTotals[cat.key].max;
+    const itemRows = cat.items.map((item, i) => `
+      <tr>
+        <td style="padding:6px 12px 6px 24px;border-bottom:1px solid #f0efe9;font-family:Arial,sans-serif;font-size:12px;color:#5a5a55;">${item}</td>
+        <td style="padding:6px 12px;border-bottom:1px solid #f0efe9;font-family:Arial,sans-serif;font-size:12px;color:#1a3a5c;">${ratingBar(h?.ratings?.[i], 10)}</td>
+      </tr>`).join('');
+    return `
+      <tr><td colspan="2" style="padding:10px 12px 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.06em;text-transform:uppercase;color:#2f6465;background:#f7f6f2;">${cat.label} — ${catTotal}/${catMax}</td></tr>
+      ${itemRows}
+      ${h?.feedback ? `<tr><td colspan="2" style="padding:6px 12px;font-family:Arial,sans-serif;font-size:12px;color:#1a3a5c;background:#e8eef5;font-style:italic;">Note: ${h.feedback}</td></tr>` : ''}`;
+  }).join('');
+
+  const questionRows = (empData.questions || []).map(q => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;">
+        <div style="font-weight:bold;color:#1a1a18;margin-bottom:6px;">${q.question}</div>
+        <div style="background:#e8eef5;border-left:3px solid #1a3a5c;padding:8px 12px;border-radius:0 4px 4px 0;color:#1a1a18;">${q.answer || '—'}</div>
+      </td>
+    </tr>`).join('');
+
+  const devRows = supData.devAreas.filter(d => d.area).map(d => `
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;">${d.area}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#5a5a55;">${d.plan || '—'}</td>
+    </tr>`).join('');
+
+  const sectionHeader = (title) =>
+    `<tr><td colspan="4" style="padding:14px 12px 6px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;color:#ffffff;background:#2f6465;">${title}</td></tr>`;
+
   const completedData =
-`5×5×5 Completed Review
-Employee: ${empData.name || '—'}
-Quarter: ${empData.quarter || '—'}
-Supervisor: ${empData.supervisorName || '—'}
-Entity: ${empData.entity || '—'}
-Completed: ${new Date().toLocaleDateString()}
+`<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#f7f6f2;">
 
---- MACHINE READABLE DATA (do not edit below this line) ---
+  <div style="background:#1a1a18;padding:20px 24px;">
+    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a9a93;margin-bottom:4px;">The Speckled Trout Outfitters</div>
+    <div style="font-size:22px;color:#d24d29;font-family:Georgia,serif;">5×5×5 Quarterly Conversation</div>
+    <div style="font-size:13px;color:#c8c6bc;margin-top:4px;">Completed review — ${empData.name || '—'} · ${empData.quarter || '—'}</div>
+  </div>
+
+  <div style="background:#ffffff;padding:16px 24px;display:flex;gap:24px;border-bottom:1px solid #e2e0d8;">
+    <div style="flex:1;"><div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;margin-bottom:2px;">Employee</div><div style="font-size:13px;font-weight:bold;color:#1a1a18;">${empData.name || '—'}</div></div>
+    <div style="flex:1;"><div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;margin-bottom:2px;">Supervisor</div><div style="font-size:13px;font-weight:bold;color:#1a1a18;">${empData.supervisorName || '—'}</div></div>
+    <div style="flex:1;"><div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;margin-bottom:2px;">Quarter</div><div style="font-size:13px;font-weight:bold;color:#1a1a18;">${empData.quarter || '—'}</div></div>
+    <div style="flex:1;"><div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;margin-bottom:2px;">Entity</div><div style="font-size:13px;font-weight:bold;color:#1a1a18;">${empData.entity || '—'}</div></div>
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Core Values — Employee ● | Supervisor ●')}
+    <tr style="background:#f7f6f2;">
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;width:20%;">Value</td>
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;width:20%;">One word</td>
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#1a3a5c;width:30%;">Employee</td>
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#2f6465;">Supervisor</td>
+    </tr>
+    ${cvRows}
+    <tr style="background:#f7f6f2;">
+      <td colspan="2" style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#1a1a18;">Total</td>
+      <td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#1a3a5c;">${cvEmpTotal}/${cvMax}</td>
+      <td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#2f6465;">${cvSupTotal}/${cvMax}</td>
+    </tr>
+  </table>
+
+  ${seatRows ? `<table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Seat(s)')}
+    ${seatRows}
+  </table>` : ''}
+
+  ${rockRows ? `<table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Rock Review')}
+    <tr style="background:#f7f6f2;">
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;width:40%;">Rock</td>
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#1a3a5c;">Employee</td>
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#2f6465;">Supervisor</td>
+    </tr>
+    ${rockRows}
+    <tr style="background:#f7f6f2;">
+      <td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#1a1a18;">Total</td>
+      <td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#1a3a5c;">${rockEmpTotal}/${rockMax}</td>
+      <td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#2f6465;">${rockSupTotal}/${rockMax}</td>
+    </tr>
+  </table>` : ''}
+
+  <table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Rock Documents')}
+    <tr><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;width:35%;font-weight:bold;">Current quarter rocks</td><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;">${empData.rockDocCurrent ? `<a href="${empData.rockDocCurrent}" style="color:#1a3a5c;">Open document →</a>` : '<span style="color:#9a9a93;font-style:italic">Not provided</span>'}</td></tr>
+    <tr><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;font-weight:bold;">Rock completion</td><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;">${empData.rockDocCompletion ? (empData.rockDocCompletion.startsWith('http') ? `<a href="${empData.rockDocCompletion}" style="color:#1a3a5c;">Open document →</a>` : empData.rockDocCompletion) : '<span style="color:#9a9a93;font-style:italic">Not provided</span>'}</td></tr>
+    <tr><td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;font-weight:bold;">Next quarter rocks</td><td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:13px;">${empData.rockDocNext ? (empData.rockDocNext.startsWith('http') ? `<a href="${empData.rockDocNext}" style="color:#1a3a5c;">Open document →</a>` : empData.rockDocNext) : '<span style="color:#9a9a93;font-style:italic">Not provided</span>'}</td></tr>
+  </table>
+
+  <table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Health Check — Employee ratings (1–10)')}
+    ${healthRows}
+    <tr style="background:#f7f6f2;"><td colspan="2" style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#1a1a18;">Overall total: ${healthGrandTotal}/${healthGrandMax}</td></tr>
+  </table>
+
+  ${questionRows ? `<table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Discussion Questions')}
+    ${questionRows}
+  </table>` : ''}
+
+  ${devRows ? `<table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Areas for Development')}
+    <tr style="background:#f7f6f2;">
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;width:50%;">Area</td>
+      <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a93;">Plan</td>
+    </tr>
+    ${devRows}
+  </table>` : ''}
+
+  ${supData.overallNotes ? `<table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
+    ${sectionHeader('Supervisor Overall Notes')}
+    <tr><td style="padding:12px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;line-height:1.6;">${supData.overallNotes}</td></tr>
+  </table>` : ''}
+
+  <div style="padding:16px 24px;background:#f7f6f2;border-top:1px solid #e2e0d8;">
+    <div style="font-family:Arial,sans-serif;font-size:11px;color:#9a9a93;text-align:center;">The Speckled Trout Outfitters · 5×5×5 Quarterly Conversation · ${new Date().toLocaleDateString()}</div>
+  </div>
+
+  <div style="padding:16px 24px;background:#f7f6f2;margin-top:24px;border-top:2px solid #e2e0d8;">
+    <div style="font-family:monospace;font-size:11px;color:#9a9a93;">--- MACHINE READABLE DATA (do not edit below this line) ---
 FIELD:employee_name|${empData.name || ''}|||FIELD:entity|${empData.entity || ''}|||FIELD:quarter|${empData.quarter || ''}|||FIELD:supervisor_name|${empData.supervisorName || ''}|||FIELD:date_completed|${new Date().toLocaleDateString()}|||FIELD:cv_emp_total|${cvEmpTotal}|||FIELD:cv_sup_total|${cvSupTotal}|||FIELD:cv_max|${cvMax}${cvFields}|||FIELD:rocks_emp_total|${rockEmpTotal}|||FIELD:rocks_sup_total|${rockSupTotal}|||FIELD:rocks_max|${rockMax}${rockFields}|||FIELD:health_total|${healthGrandTotal}|||FIELD:health_max|${healthGrandMax}|||FIELD:belonging|${healthCatTotals.belonging.total}|||FIELD:inspired|${healthCatTotals.inspired.total}|||FIELD:trusted|${healthCatTotals.trusted.total}|||FIELD:empowered|${healthCatTotals.empowered.total}|||FIELD:accountable|${healthCatTotals.accountable.total}|||FIELD:measured|${healthCatTotals.measured.total}|||FIELD:balanced|${healthCatTotals.balanced.total}${qFields}${devFields}|||FIELD:rock_doc_current|${(empData.rockDocCurrent || '').replace(/\|/g, '/')}|||FIELD:rock_doc_completion|${(empData.rockDocCompletion || '').replace(/\|/g, '/')}|||FIELD:rock_doc_next|${(empData.rockDocNext || '').replace(/\|/g, '/')}|||FIELD:supervisor_notes|${(supData.overallNotes || '').replace(/\|/g, '/').replace(/\n/g, ' ')}
---- END MACHINE READABLE DATA ---
+--- END MACHINE READABLE DATA ---</div>
+  </div>
 
-=== CORE VALUES ===
-${cv}
-Total — Employee: ${cvEmpTotal}/${cvMax} | Supervisor: ${cvSupTotal}/${cvMax}
-
-=== SEATS ===
-${seats || '—'}
-
-=== ROCK REVIEW ===
-${rocks || '—'}
-${rockMax > 0 ? `Total — Employee: ${rockEmpTotal}/${rockMax} | Supervisor: ${rockSupTotal}/${rockMax}` : ''}
-
-=== ROCK DOCUMENTS ===
-Current quarter rocks: ${empData.rockDocCurrent || '—'}
-Rock completion: ${empData.rockDocCompletion || '—'}
-Next quarter rocks: ${empData.rockDocNext || '—'}
-
-=== HEALTH CHECK ===
-${healthItemLines}
-
-Overall Health Check total: ${healthGrandTotal}/${healthGrandMax}
-
-=== DISCUSSION QUESTIONS ===
-${questions || '—'}
-
-=== AREAS FOR DEVELOPMENT ===
-${devAreas}
-
-=== SUPERVISOR OVERALL NOTES ===
-${supData.overallNotes || '—'}`;
+</div>`;
 
   const sup = SUPERVISORS[empData.supervisorName] || {};
-
-  // Build summary data package — includes both employee and supervisor data
-  const summaryData = {
-    name:            empData.name,
-    entity:          empData.entity,
-    quarter:         empData.quarter,
-    supervisorName:  empData.supervisorName,
-    cv:              empData.cv,
-    seats:           empData.seats,
-    rocks:           empData.rocks,
-    rockDocCurrent:  empData.rockDocCurrent,
-    rockDocCompletion: empData.rockDocCompletion,
-    rockDocNext:     empData.rockDocNext,
-    health:          empData.health,
-    questions:       empData.questions,
-    supCvRatings:    supData.cvRatings,
-    supRockRatings:  supData.rockRatings,
-    supQNotes:       supData.qNotes.map(q => q.supNote),
-    devAreas:        supData.devAreas,
-    supOverallNotes: supData.overallNotes
-  };
-  const summaryEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(summaryData))));
-  const summaryLink = `${SUMMARY_URL}?data=${summaryEncoded}`;
 
   emailjs.init(EMAILJS_PUBLIC_KEY);
 
@@ -730,7 +825,6 @@ ${supData.overallNotes || '—'}`;
     employee_email:   empData.empEmail || '',
     quarter:          empData.quarter || '—',
     entity:           empData.entity || '—',
-    summary_link:     summaryLink,
     completed_data:   completedData
   };
 
