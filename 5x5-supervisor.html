@@ -117,6 +117,8 @@
   button.primary { font-family: 'Arial', sans-serif; font-size: 13px; background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 10px 24px; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.15s; }
   button.primary:hover { opacity: 0.88; }
   button.primary:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { font-family: 'Arial', sans-serif; font-size: 13px; background: none; border: 0.5px solid var(--border-strong); color: var(--ink-secondary); border-radius: var(--radius); padding: 10px 24px; cursor: pointer; transition: all 0.15s; }
+  button.secondary:hover { border-color: var(--accent); color: var(--accent); }
   button.add-row { font-family: 'Arial', sans-serif; font-size: 12px; background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); color: var(--ink-secondary); padding: 5px 12px; cursor: pointer; margin-top: 8px; }
   button.add-row:hover { border-color: var(--sup-green); color: var(--sup-green); }
   .btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 2rem; }
@@ -137,8 +139,9 @@
 
   @media print {
     body { background: white; }
-    .btn-row, button { display: none !important; }
+    .btn-row, .success-screen { display: none !important; }
     .section { break-inside: avoid; }
+    .print-btn-row { display: none !important; }
   }
 
   @media (max-width: 600px) {
@@ -262,14 +265,18 @@
   <div class="error-msg" id="error-msg"></div>
 
   <div class="btn-row">
+    <button class="secondary" onclick="window.print()" style="font-size:13px;">🖨 Print / Save PDF</button>
     <button class="primary" onclick="saveToSharePoint()">Submit completed review &rarr;</button>
   </div>
 </div>
 
 <div class="success-screen" id="success-screen">
   <div class="check">✓</div>
-  <h2>Saved</h2>
-  <p>The completed review has been sent. You're ready for the meeting.</p>
+  <h2>Submitted</h2>
+  <p>The completed review has been sent to the supervisor, employee, and admin. Use the button below to save a PDF copy for your records.</p>
+  <div style="margin-top:1.5rem;">
+    <button class="primary" onclick="window.print()" style="font-size:14px;padding:12px 28px;">🖨 Print / Save as PDF</button>
+  </div>
 </div>
 
 </div>
@@ -281,6 +288,7 @@ const EMAILJS_PUBLIC_KEY       = 'qbm0FluRDbLK432li';
 const EMAILJS_SERVICE_ID       = 'service_x2e8pjc';
 const EMAILJS_TEMPLATE_ID      = 'template_pz1sj12';
 const COMPLETED_RECIPIENT      = 'ashley@thespeckledtrout.com';
+const SUMMARY_URL              = 'https://amcraig828.github.io/5x5-forms/5x5-summary.html';
 
 const SUPERVISORS = {
   'Will Brinker': { name: 'Will', email: 'william@thespeckledtrout.com' },
@@ -690,14 +698,39 @@ ${supData.overallNotes || '—'}`;
 
   const sup = SUPERVISORS[empData.supervisorName] || {};
 
+  // Build summary data package — includes both employee and supervisor data
+  const summaryData = {
+    name:            empData.name,
+    entity:          empData.entity,
+    quarter:         empData.quarter,
+    supervisorName:  empData.supervisorName,
+    cv:              empData.cv,
+    seats:           empData.seats,
+    rocks:           empData.rocks,
+    rockDocCurrent:  empData.rockDocCurrent,
+    rockDocCompletion: empData.rockDocCompletion,
+    rockDocNext:     empData.rockDocNext,
+    health:          empData.health,
+    questions:       empData.questions,
+    supCvRatings:    supData.cvRatings,
+    supRockRatings:  supData.rockRatings,
+    supQNotes:       supData.qNotes.map(q => q.supNote),
+    devAreas:        supData.devAreas,
+    supOverallNotes: supData.overallNotes
+  };
+  const summaryEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(summaryData))));
+  const summaryLink = `${SUMMARY_URL}?data=${summaryEncoded}`;
+
   emailjs.init(EMAILJS_PUBLIC_KEY);
 
   const templateParams = {
     employee_name:    empData.name || '—',
     supervisor_name:  empData.supervisorName || '—',
     supervisor_email: sup.email || COMPLETED_RECIPIENT,
+    employee_email:   empData.empEmail || '',
     quarter:          empData.quarter || '—',
     entity:           empData.entity || '—',
+    summary_link:     summaryLink,
     completed_data:   completedData
   };
 
