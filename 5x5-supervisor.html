@@ -807,9 +807,9 @@ async function saveToSharePoint() {
   </div>
 
   <div style="padding:16px 24px;background:#f7f6f2;margin-top:24px;border-top:2px solid #e2e0d8;">
-    <div style="font-family:monospace;font-size:11px;color:#9a9a93;">--- MACHINE READABLE DATA (do not edit below this line) ---
+===5x5_DATA_START=== --- MACHINE READABLE DATA (do not edit below this line) ---
 FIELD:employee_name|${empData.name || ''}|||FIELD:entity|${empData.entity || ''}|||FIELD:quarter|${empData.quarter || ''}|||FIELD:supervisor_name|${empData.supervisorName || ''}|||FIELD:date_completed|${new Date().toLocaleDateString()}|||FIELD:cv_emp_total|${cvEmpTotal}|||FIELD:cv_sup_total|${cvSupTotal}|||FIELD:cv_max|${cvMax}${cvFields}|||FIELD:rocks_emp_total|${rockEmpTotal}|||FIELD:rocks_sup_total|${rockSupTotal}|||FIELD:rocks_max|${rockMax}${rockFields}|||FIELD:health_total|${healthGrandTotal}|||FIELD:health_max|${healthGrandMax}|||FIELD:belonging|${healthCatTotals.belonging.total}|||FIELD:inspired|${healthCatTotals.inspired.total}|||FIELD:trusted|${healthCatTotals.trusted.total}|||FIELD:empowered|${healthCatTotals.empowered.total}|||FIELD:accountable|${healthCatTotals.accountable.total}|||FIELD:measured|${healthCatTotals.measured.total}|||FIELD:balanced|${healthCatTotals.balanced.total}${qFields}${devFields}|||FIELD:rock_doc_current|${(empData.rockDocCurrent || '').replace(/\|/g, '/')}|||FIELD:rock_doc_completion|${(empData.rockDocCompletion || '').replace(/\|/g, '/')}|||FIELD:rock_doc_next|${(empData.rockDocNext || '').replace(/\|/g, '/')}|||FIELD:supervisor_notes|${(supData.overallNotes || '').replace(/\|/g, '/').replace(/\n/g, ' ')}
---- END MACHINE READABLE DATA ---</div>
+--- END MACHINE READABLE DATA --- ===5x5_DATA_END===</div>
   </div>
 
 </div>`;
