@@ -404,6 +404,11 @@ function validate(data) {
   if (!data.empEmail) return 'Please enter your email address.';
   if (!data.initials) return 'Please enter your 3-letter initials.';
   if (!data.rockTitle) return 'Please enter a short title for your rock.';
+  if (!data.specific) return 'Please fill in the Specific section.';
+  if (!data.measurable) return 'Please fill in the Measurable section.';
+  if (!data.achievable) return 'Please fill in the Achievable section.';
+  if (!data.relevant) return 'Please fill in the Relevant section.';
+  if (!data.timeFramed) return 'Please fill in the Time-framed section.';
   return null;
 }
 
