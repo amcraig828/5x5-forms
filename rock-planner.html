@@ -314,10 +314,14 @@
 
 <div class="sending-overlay" id="sending-overlay">Submitting your rock planner...</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // ── CONFIG ─────────────────────────────────────────────────────────────────
+const EMAILJS_PUBLIC_KEY  = 'qbm0FluRDbLK432li';
+const EMAILJS_SERVICE_ID  = 'service_x2e8pjc';
+const EMAILJS_TEMPLATE_ID = 'template_pz1sj12';
+
 const ADMIN_EMAIL = 'ashley@thespeckledtrout.com';
-const FORMSUBMIT_URL = 'https://formsubmit.co/ajax/ashley@thespeckledtrout.com';
 
 const SUPERVISORS = {
   'Will Brinker':                { name: 'Will',          email: 'william@thespeckledtrout.com' },
@@ -500,24 +504,25 @@ async function submitForm() {
   btn.textContent = 'Submitting...';
   document.getElementById('sending-overlay').style.display = 'flex';
 
+  const sup = SUPERVISORS[data.supervisorName] || {};
   const htmlBody = buildHtmlEmail(data);
 
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  const templateParams = {
+    supervisor_name:  sup.name || data.supervisorName,
+    supervisor_email: sup.email || '',
+    employee_name:    data.name,
+    employee_email:   data.empEmail,
+    quarter:          data.quarter,
+    entity:           data.entity,
+    completed_data:   htmlBody
+  };
+
   try {
-    await fetch(FORMSUBMIT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        _subject: `S.M.A.R.T Rock Planner — ${data.name}, ${data.quarter}`,
-        _template: 'box',
-        employee_name: data.name,
-        initials: data.initials,
-        quarter: data.quarter,
-        rock_title: data.rockTitle,
-        message: htmlBody
-      })
-    });
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
   } catch(e) {
-    console.error('FormSubmit send failed:', e);
+    console.error('EmailJS send failed:', e);
   }
 
   document.getElementById('sending-overlay').style.display = 'none';
