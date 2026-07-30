@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quarterly Rock Completion — The Speckled Trout Outfitters</title>
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-secondary: #5a5a55;
+    --ink-tertiary: #9a9a93;
+    --surface: #ffffff;
+    --surface-secondary: #f7f6f2;
+    --border: #e2e0d8;
+    --border-strong: #c8c6bc;
+    --accent: #2a5c45;
+    --accent-light: #e8f0ec;
+    --emp-blue: #1a3a5c;
+    --emp-blue-light: #e8eef5;
+    --warn: #8c4a1a;
+    --warn-light: #f5ece8;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--surface-secondary); color: var(--ink); min-height: 100vh; }
+  .page { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  .header { border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; margin-bottom: 2rem; }
+  .header-eyebrow { font-family: 'Arial', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-tertiary); margin-bottom: 6px; }
+  .header h1 { font-size: 28px; font-weight: normal; letter-spacing: -0.02em; color: #d24d29; }
+  .header-sub { font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink-secondary); margin-top: 6px; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .meta-grid.five { grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group label { font-family: 'Arial', sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-secondary); }
+  .field-group input, .field-group select, .field-group textarea {
+    border: 0.5px solid var(--border-strong); border-radius: var(--radius);
+    background: var(--surface); font-family: 'Arial', sans-serif; font-size: 13px;
+    color: var(--ink); padding: 8px 10px; outline: none; width: 100%;
+  }
+  .field-group textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light);
+  }
+  .section { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.25rem; }
+  .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 1.25rem; }
+  .section-title { font-size: 17px; font-weight: normal; letter-spacing: -0.01em; color: var(--ink); }
+  .section-note { font-family: 'Arial', sans-serif; font-size: 12px; color: var(--ink-tertiary); margin-bottom: 1rem; }
+  .radio-group { display: flex; gap: 20px; margin-top: 8px; }
+  .radio-group label {
+    font-family: 'Arial', sans-serif; font-size: 13px; color: var(--ink);
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+  .radio-group input[type="radio"] { accent-color: var(--accent); }
+  .conditional { display: none; margin-top: 12px; }
+  .bullet-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bullet-dot { font-family: 'Arial', sans-serif; font-size: 18px; color: var(--accent); flex-shrink: 0; }
+  .bullet-row input {
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    background: var(--surface-secondary); font-family: 'Arial', sans-serif;
+    font-size: 13px; color: var(--ink); padding: 7px 10px; width: 100%; outline: none;
+  }
+  .bullet-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+  .btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 2rem; }
+  button.primary {
+    font-family: 'Arial', sans-serif; font-size: 13px; background: var(--accent);
+    color: white; border: none; border-radius: var(--radius); padding: 10px 24px;
+    cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.15s;
+  }
+  button.primary:hover { opacity: 0.88; }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .error-msg {
+    font-family: 'Arial', sans-serif; font-size: 12px; color: var(--warn);
+    background: var(--warn-light); border: 0.5px solid #d4905a; border-radius: var(--radius);
+    padding: 10px 14px; margin-bottom: 1rem; display: none;
+  }
+  .success-screen { display: none; text-align: center; padding: 3rem 1rem; }
+  .success-screen .check { font-size: 48px; color: var(--accent); margin-bottom: 1rem; }
+  .success-screen h2 { font-size: 22px; font-weight: normal; margin-bottom: 8px; }
+  .success-screen p {
+    font-family: 'Arial', sans-serif; font-size: 14px; color: var(--ink-secondary);
+    line-height: 1.6; max-width: 420px; margin: 0 auto;
+  }
+  .sending-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.85); z-index: 100;
+    justify-content: center; align-items: center;
+    font-family: 'Arial', sans-serif; font-size: 16px; color: var(--ink-secondary);
+  }
+  @media (max-width: 600px) {
+    .meta-grid, .meta-grid.five { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div id="main-form">
+    <div class="header">
+      <div class="header-eyebrow">The Speckled Trout Outfitters</div>
+      <h1>Quarterly Rock Completion</h1>
+      <div class="header-sub">Report on your rock at the end of the quarter. A copy will be sent to your supervisor and saved to SharePoint.</div>
+    </div>
+
+    <!-- Meta -->
+    <div class="meta-grid five">
+      <div class="field-group">
+        <label>Your name <span style="color:var(--warn)">*</span></label>
+        <input type="text" id="emp-name" placeholder="Full name">
+      </div>
+      <div class="field-group">
+        <label>Initials (3-letter) <span style="color:var(--warn)">*</span></label>
+        <input type="text" id="emp-initials" placeholder="e.g. ASC" maxlength="4" style="text-transform:uppercase;">
+      </div>
+      <div class="field-group">
+        <label>Entity</label>
+        <select id="emp-entity">
+          <option value="">Select entity...</option>
+          <option>The Speckled Trout Outfitters</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Quarter</label>
+        <select id="emp-quarter">
+          <option value="">Select...</option>
+          <option>Q1</option>
+          <option>Q2</option>
+          <option>Q3</option>
+          <option>Q4</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Year</label>
+        <input type="text" id="emp-year" placeholder="2026" maxlength="4">
+      </div>
+    </div>
+    <div class="meta-grid">
+      <div class="field-group">
+        <label>Your supervisor <span style="color:var(--warn)">*</span></label>
+        <select id="emp-supervisor">
+          <option value="">Select supervisor...</option>
+          <option>Will Brinker</option>
+          <option>Joe Lynch / Phillip Jamison</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Your email <span style="color:var(--warn)">*</span></label>
+        <input type="email" id="emp-email" placeholder="you@thespeckledtrout.com">
+      </div>
+    </div>
+
+    <!-- Rock Title -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Rock</div>
+      </div>
+      <div class="field-group">
+        <label>Rock title <span style="color:var(--warn)">*</span></label>
+        <input type="text" id="rock-title" placeholder="The rock you are reporting on">
+      </div>
+    </div>
+
+    <!-- Completion Status -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Is your rock complete or on track to be completed by the end of the quarter?</div>
+      </div>
+      <div class="radio-group">
+        <label><input type="radio" name="complete" value="Yes" onchange="toggleExplain()"> Yes</label>
+        <label><input type="radio" name="complete" value="No" onchange="toggleExplain()"> No</label>
+      </div>
+      <div class="conditional" id="explain-wrap">
+        <div class="field-group">
+          <label>If no, please explain what prevented this rock from being completed</label>
+          <textarea id="explain" rows="4" placeholder="What got in the way?"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accomplishments -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">What specifically did you accomplish?</div>
+      </div>
+      <div class="section-note">3 bullets or less.</div>
+      <div class="bullet-row"><span class="bullet-dot">•</span><input type="text" id="accomplish-1" placeholder="First accomplishment"></div>
+      <div class="bullet-row"><span class="bullet-dot">•</span><input type="text" id="accomplish-2" placeholder="Second accomplishment (optional)"></div>
+      <div class="bullet-row"><span class="bullet-dot">•</span><input type="text" id="accomplish-3" placeholder="Third accomplishment (optional)"></div>
+    </div>
+
+    <!-- Next Steps -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Are there any next steps or follow-ups needed?</div>
+      </div>
+      <div class="bullet-row"><span class="bullet-dot">•</span><input type="text" id="nextstep-1" placeholder="Next step or follow-up"></div>
+      <div class="bullet-row"><span class="bullet-dot">•</span><input type="text" id="nextstep-2" placeholder="(optional)"></div>
+      <div class="bullet-row"><span class="bullet-dot">•</span><input type="text" id="nextstep-3" placeholder="(optional)"></div>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <div class="btn-row">
+      <button class="primary" id="submit-btn" onclick="submitForm()">Submit rock completion &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="success-screen" id="success-screen">
+    <div class="check">✓</div>
+    <h2>Rock completion submitted</h2>
+    <p>Your Quarterly Rock Completion has been sent to your supervisor and will be saved to SharePoint.</p>
+  </div>
+
+</div>
+
+<div class="sending-overlay" id="sending-overlay">Submitting your rock completion...</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+const EMAILJS_PUBLIC_KEY  = 'qbm0FluRDbLK432li';
+const EMAILJS_SERVICE_ID  = 'service_x2e8pjc';
+const EMAILJS_TEMPLATE_ID = 'template_pz1sj12';
+
+const SUPERVISORS = {
+  'Will Brinker':                { name: 'Will',          email: 'william@thespeckledtrout.com' },
+  'Joe Lynch / Phillip Jamison': { name: 'Joe / Phillip', email: 'joe@thespeckledtrout.com' }
+};
+// ───────────────────────────────────────────────────────────────────────────
+
+function toggleExplain() {
+  const val = document.querySelector('input[name="complete"]:checked')?.value;
+  document.getElementById('explain-wrap').style.display = val === 'No' ? 'block' : 'none';
+}
+
+function collectData() {
+  const name = document.getElementById('emp-name').value.trim();
+  const initials = document.getElementById('emp-initials').value.trim().toUpperCase();
+  const entity = document.getElementById('emp-entity').value;
+  const quarterVal = document.getElementById('emp-quarter').value;
+  const yearVal = document.getElementById('emp-year').value.trim();
+  const quarter = quarterVal && yearVal ? `${quarterVal} ${yearVal}` : '';
+  const supervisorName = document.getElementById('emp-supervisor').value;
+  const empEmail = document.getElementById('emp-email').value.trim();
+  const rockTitle = document.getElementById('rock-title').value.trim();
+  const isComplete = document.querySelector('input[name="complete"]:checked')?.value || '';
+  const explain = document.getElementById('explain').value.trim();
+  const accomplish1 = document.getElementById('accomplish-1').value.trim();
+  const accomplish2 = document.getElementById('accomplish-2').value.trim();
+  const accomplish3 = document.getElementById('accomplish-3').value.trim();
+  const nextstep1 = document.getElementById('nextstep-1').value.trim();
+  const nextstep2 = document.getElementById('nextstep-2').value.trim();
+  const nextstep3 = document.getElementById('nextstep-3').value.trim();
+
+  return { name, initials, entity, quarter, year: yearVal, supervisorName, empEmail, rockTitle,
+           isComplete, explain, accomplish1, accomplish2, accomplish3,
+           nextstep1, nextstep2, nextstep3 };
+}
+
+function validate(data) {
+  if (!data.name) return 'Please enter your name.';
+  if (!data.initials) return 'Please enter your 3-letter initials.';
+  if (!data.entity) return 'Please select your entity.';
+  if (!data.quarter) return 'Please select a quarter and enter a year.';
+  if (!data.supervisorName) return 'Please select your supervisor.';
+  if (!data.empEmail) return 'Please enter your email address.';
+  if (!data.rockTitle) return 'Please enter your rock title.';
+  if (!data.isComplete) return 'Please indicate whether your rock is complete or on track.';
+  if (data.isComplete === 'No' && !data.explain) return 'Please explain what prevented completion.';
+  if (!data.accomplish1) return 'Please enter at least one accomplishment.';
+  return null;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function buildHtmlEmail(data) {
+  const accomplishments = [data.accomplish1, data.accomplish2, data.accomplish3].filter(Boolean);
+  const nextsteps = [data.nextstep1, data.nextstep2, data.nextstep3].filter(Boolean);
+
+  const statusColor = data.isComplete === 'Yes' ? '#2a5c45' : '#8c4a1a';
+  const statusBg = data.isComplete === 'Yes' ? '#e8f0ec' : '#f5ece8';
+
+  return `
+<div style="max-width:680px;margin:0 auto;font-family:Georgia,serif;color:#1a1a18;">
+  <div style="border-bottom:2px solid #1a1a18;padding-bottom:12px;margin-bottom:20px;">
+    <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a9a93;margin-bottom:4px;">The Speckled Trout Outfitters</div>
+    <div style="font-size:24px;color:#d24d29;">Quarterly Rock Completion</div>
+  </div>
+
+  <table style="width:100%;font-family:Arial,sans-serif;font-size:13px;margin-bottom:20px;">
+    <tr><td style="color:#5a5a55;padding:3px 0;width:120px;">Employee</td><td style="padding:3px 0;"><strong>${data.name}</strong></td></tr>
+    <tr><td style="color:#5a5a55;padding:3px 0;">Entity</td><td style="padding:3px 0;">${data.entity}</td></tr>
+    <tr><td style="color:#5a5a55;padding:3px 0;">Quarter</td><td style="padding:3px 0;">${data.quarter}</td></tr>
+    <tr><td style="color:#5a5a55;padding:3px 0;">Supervisor</td><td style="padding:3px 0;">${data.supervisorName}</td></tr>
+    <tr><td style="color:#5a5a55;padding:3px 0;">Submitted</td><td style="padding:3px 0;">${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td></tr>
+  </table>
+
+  <div style="background:#f7f6f2;border:1px solid #e2e0d8;border-radius:8px;padding:16px;margin-bottom:16px;">
+    <div style="font-size:17px;margin-bottom:8px;"><strong>${data.rockTitle}</strong></div>
+    <div style="display:inline-block;padding:4px 12px;border-radius:4px;background:${statusBg};color:${statusColor};font-family:Arial,sans-serif;font-size:12px;font-weight:bold;text-transform:uppercase;">
+      ${data.isComplete === 'Yes' ? '✓ Complete / On Track' : '✗ Not Complete'}
+    </div>
+  </div>
+
+  ${data.isComplete === 'No' ? `
+  <div style="margin-bottom:16px;">
+    <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5a55;margin-bottom:8px;font-weight:bold;">What Prevented Completion</div>
+    <div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.5;">${data.explain}</div>
+  </div>` : ''}
+
+  <div style="margin-bottom:16px;">
+    <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5a55;margin-bottom:8px;font-weight:bold;">What Was Accomplished</div>
+    <ul style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;padding-left:20px;">
+      ${accomplishments.map(a => `<li>${a}</li>`).join('')}
+    </ul>
+  </div>
+
+  ${nextsteps.length > 0 ? `
+  <div style="margin-bottom:16px;">
+    <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5a55;margin-bottom:8px;font-weight:bold;">Next Steps / Follow-Ups</div>
+    <ul style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;padding-left:20px;">
+      ${nextsteps.map(s => `<li>${s}</li>`).join('')}
+    </ul>
+  </div>` : ''}
+
+  <div style="border-top:1px solid #e2e0d8;padding-top:12px;margin-top:24px;">
+    <div style="font-family:Arial,sans-serif;font-size:11px;color:#9a9a93;">This report was submitted via the TSTO Quarterly Rock Completion digital form. A Word doc copy will be saved to SharePoint.</div>
+  </div>
+</div>
+
+<!-- MACHINE-READABLE BLOCK — DO NOT EDIT BELOW THIS LINE -->
+<div style="display:none;">
+===ROCK_COMPLETION_DATA_START===
+FIELD:FormType|RockCompletion|||
+FIELD:EmployeeName|${data.name}|||
+FIELD:Initials|${data.initials}|||
+FIELD:Entity|${data.entity}|||
+FIELD:Quarter|${data.quarter}|||
+FIELD:Year|${data.year}|||
+FIELD:SupervisorName|${data.supervisorName}|||
+FIELD:EmployeeEmail|${data.empEmail}|||
+FIELD:DateSubmitted|${new Date().toISOString().split('T')[0]}|||
+FIELD:RockTitle|${data.rockTitle}|||
+FIELD:IsComplete|${data.isComplete}|||
+FIELD:ExplainIncomplete|${data.explain.replace(/\n/g, '<<BR>>')}|||
+FIELD:Accomplish1|${data.accomplish1}|||
+FIELD:Accomplish2|${data.accomplish2}|||
+FIELD:Accomplish3|${data.accomplish3}|||
+FIELD:NextStep1|${data.nextstep1}|||
+FIELD:NextStep2|${data.nextstep2}|||
+FIELD:NextStep3|${data.nextstep3}|||
+===ROCK_COMPLETION_DATA_END===
+</div>`;
+}
+
+async function submitForm() {
+  const data = collectData();
+  const err = validate(data);
+  if (err) { showError(err); return; }
+  document.getElementById('error-msg').style.display = 'none';
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  document.getElementById('sending-overlay').style.display = 'flex';
+
+  const sup = SUPERVISORS[data.supervisorName] || {};
+  const htmlBody = buildHtmlEmail(data);
+
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  const templateParams = {
+    supervisor_name:  sup.name || data.supervisorName,
+    supervisor_email: sup.email || '',
+    employee_name:    data.name,
+    employee_email:   data.empEmail,
+    quarter:          data.quarter,
+    entity:           data.entity,
+    completed_data:   htmlBody
+  };
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+  } catch(e) {
+    console.error('EmailJS send failed:', e);
+  }
+
+  document.getElementById('sending-overlay').style.display = 'none';
+  document.getElementById('main-form').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
