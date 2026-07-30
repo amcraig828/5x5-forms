@@ -156,7 +156,10 @@
         <label>Entity</label>
         <select id="emp-entity">
           <option value="">Select entity...</option>
-          <option>The Speckled Trout Outfitters</option>
+          <option>TST Outfitters</option>
+          <option>TST Outpost</option>
+          <option>TST Restaurant & Bottle Shop</option>
+          <option>TST Umbrella (EPS)</option>
         </select>
       </div>
       <div class="field-group">
@@ -178,9 +181,7 @@
       <div class="field-group">
         <label>Your supervisor <span style="color:var(--warn)">*</span></label>
         <select id="emp-supervisor">
-          <option value="">Select supervisor...</option>
-          <option>Will Brinker</option>
-          <option>Joe Lynch / Phillip Jamison</option>
+          <option value="">Select entity first...</option>
         </select>
       </div>
       <div class="field-group">
@@ -325,9 +326,26 @@ const ADMIN_EMAIL = 'ashley@thespeckledtrout.com';
 
 const SUPERVISORS = {
   'Will Brinker':                { name: 'Will',          email: 'william@thespeckledtrout.com' },
-  'Joe Lynch / Phillip Jamison': { name: 'Joe / Phillip', email: 'joe@thespeckledtrout.com' }
+  'Joe Lynch / Phillip Jamison': { name: 'Joe / Phillip', email: 'joe@thespeckledtrout.com,phillip@thespeckledtrout.com' },
+  'Emily / Erica Brinker':       { name: 'Emily / Erica', email: 'erica@thespeckledtrout.com,emily@thespeckledtrout.com' },
+  'Ivy Kouns':                   { name: 'Ivy',           email: 'ivy@thespeckledtrout.com' }
+};
+
+const ENTITY_SUPERVISORS = {
+  'TST Outfitters':                ['Will Brinker', 'Joe Lynch / Phillip Jamison'],
+  'TST Outpost':                   ['Emily / Erica Brinker'],
+  'TST Restaurant & Bottle Shop':  ['Emily / Erica Brinker', 'Ivy Kouns'],
+  'TST Umbrella (EPS)':            []
 };
 // ───────────────────────────────────────────────────────────────────────────
+
+// Update supervisor dropdown when entity changes
+document.getElementById('emp-entity').addEventListener('change', function() {
+  const supSelect = document.getElementById('emp-supervisor');
+  const sups = ENTITY_SUPERVISORS[this.value] || [];
+  supSelect.innerHTML = '<option value="">Select supervisor...</option>' +
+    sups.map(s => `<option>${s}</option>`).join('');
+});
 
 const STEP_COUNT = 13;
 
