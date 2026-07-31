@@ -292,9 +292,21 @@
         <div class="section-title">Resources needed</div>
       </div>
       <div class="section-note">List any resources that need to be coordinated or lined up for completion.</div>
-      <div class="field-group">
-        <textarea id="resources" rows="4" placeholder="People, tools, budget, approvals, etc."></textarea>
-      </div>
+      <table class="steps-table">
+        <thead>
+          <tr>
+            <th style="width:24px">#</th>
+            <th>Resource</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="row-num">1</td><td><input type="text" id="resource-1" placeholder="e.g. Budget approval from Will"></td></tr>
+          <tr><td class="row-num">2</td><td><input type="text" id="resource-2" placeholder="e.g. New POS hardware"></td></tr>
+          <tr><td class="row-num">3</td><td><input type="text" id="resource-3" placeholder="e.g. IT support for setup"></td></tr>
+          <tr><td class="row-num">4</td><td><input type="text" id="resource-4" placeholder="e.g. Staff training time"></td></tr>
+          <tr><td class="row-num">5</td><td><input type="text" id="resource-5" placeholder="e.g. Vendor contract"></td></tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="error-msg" id="error-msg"></div>
@@ -348,6 +360,7 @@ document.getElementById('emp-entity').addEventListener('change', function() {
 });
 
 const STEP_COUNT = 13;
+const RESOURCE_COUNT = 5;
 
 // Build steps table
 (function buildSteps() {
@@ -390,7 +403,11 @@ function collectData() {
     }
   }
 
-  const resources = document.getElementById('resources').value.trim();
+  const resources = [];
+  for (let i = 1; i <= RESOURCE_COUNT; i++) {
+    const val = document.getElementById(`resource-${i}`).value.trim();
+    if (val) resources.push(val);
+  }
 
   return { name, entity, quarter, year: yearVal, supervisorName, empEmail, initials, rockTitle, rockDesc,
            specific, measurable, achievable, relevant, timeFramed, steps, resources };
@@ -445,6 +462,22 @@ function buildHtmlEmail(data) {
        </table>`
     : '<p style="color:#9a9a93;font-size:13px;">No steps entered.</p>';
 
+  const resourcesHtml = data.resources.length > 0
+    ? `<div style="margin-bottom:20px;">
+        <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5a55;margin-bottom:8px;font-weight:bold;">Resources Needed</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;">
+          <tr style="background:#f0efe9;">
+            <th style="text-align:left;padding:6px 8px;border:1px solid #e2e0d8;font-size:11px;width:24px;">#</th>
+            <th style="text-align:left;padding:6px 8px;border:1px solid #e2e0d8;font-size:11px;">RESOURCE</th>
+          </tr>
+          ${data.resources.map((r, i) => `<tr>
+            <td style="padding:6px 8px;border:1px solid #e2e0d8;">${i + 1}</td>
+            <td style="padding:6px 8px;border:1px solid #e2e0d8;">${r}</td>
+          </tr>`).join('')}
+        </table>
+      </div>`
+    : '';
+
   return `
 <div style="max-width:680px;margin:0 auto;font-family:Georgia,serif;color:#1a1a18;">
   <div style="border-bottom:2px solid #1a1a18;padding-bottom:12px;margin-bottom:20px;">
@@ -483,11 +516,7 @@ function buildHtmlEmail(data) {
     ${stepsHtml}
   </div>
 
-  ${data.resources ? `
-  <div style="margin-bottom:20px;">
-    <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5a55;margin-bottom:8px;font-weight:bold;">Resources Needed</div>
-    <div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.5;">${data.resources}</div>
-  </div>` : ''}
+  ${resourcesHtml}
 
   <div style="border-top:1px solid #e2e0d8;padding-top:12px;margin-top:24px;">
     <div style="font-family:Arial,sans-serif;font-size:11px;color:#9a9a93;">This rock planner was submitted via the TSTO S.M.A.R.T Rock Planner digital form. A PDF copy will be saved to SharePoint.</div>
@@ -512,7 +541,7 @@ FIELD:Measurable|${data.measurable.replace(/\n/g, '<<BR>>')}|||
 FIELD:Achievable|${data.achievable.replace(/\n/g, '<<BR>>')}|||
 FIELD:Relevant|${data.relevant.replace(/\n/g, '<<BR>>')}|||
 FIELD:TimeFramed|${data.timeFramed.replace(/\n/g, '<<BR>>')}|||
-FIELD:Resources|${data.resources.replace(/\n/g, '<<BR>>')}|||
+FIELD:Resources|${data.resources.join('<<BR>>')}|||
 ${data.steps.map(s => `FIELD:Step${s.num}|${s.date}~~${s.activity.replace(/\n/g, ' ')}~~${s.completed}|||`).join('\n')}
 ===ROCK_PLANNER_DATA_END===
 </div>`;
