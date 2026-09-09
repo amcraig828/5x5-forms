@@ -208,14 +208,6 @@
     <div id="rock-sup-rows"></div>
   </div>
 
-  <!-- Rock Documents -->
-  <div class="section">
-    <div class="section-header">
-      <div class="section-title">Rock documents</div>
-      <span class="section-badge badge-emp">Employee submitted</span>
-    </div>
-    <div id="rock-docs-sup"></div>
-  </div>
 
   <!-- Health Check -->
   <div class="section">
@@ -386,9 +378,6 @@ function loadEmployeeData() {
                       getIt: !!s.g, wantIt: !!s.w, capacity: !!s.c
                     })),
       rocks:        (slim.ro || []).map(r => ({ name: r.n, rating: r.r })),
-      rockDocCurrent:    slim.rd?.[0] || '',
-      rockDocCompletion: slim.rd?.[1] || '',
-      rockDocNext:       slim.rd?.[2] || '',
       health,
       questions:    (slim.qs || []).map(q => ({
                       question: QUESTIONS_LIST[q.i] || `Question ${q.i + 1}`,
@@ -453,31 +442,6 @@ function buildSeats(seats) {
         <span class="gwc-badge ${s.capacity?'yes':'no'}">Capacity: ${s.capacity?'Yes':'No'}</span>
       </div>
     </div>`).join('');
-}
-
-function buildRockDocs(data) {
-  const wrap = document.getElementById('rock-docs-sup');
-  const isUrl = val => val && (val.startsWith('http://') || val.startsWith('https://'));
-  const renderVal = (val, label) => {
-    if (!val) return `<span style="color:var(--ink-tertiary);font-style:italic">Not provided</span>`;
-    if (isUrl(val)) return `<a href="${val}" target="_blank" style="color:var(--emp-blue);font-family:Arial,sans-serif;font-size:13px;">${label} →</a>`;
-    return `<span style="font-family:Arial,sans-serif;font-size:13px;color:var(--ink-secondary)">${val}</span>`;
-  };
-  wrap.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="display:grid;grid-template-columns:180px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);">
-        <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:var(--ink-secondary)">Current quarter rocks</span>
-        ${renderVal(data.rockDocCurrent, 'Open document')}
-      </div>
-      <div style="display:grid;grid-template-columns:180px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);">
-        <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:var(--ink-secondary)">Rock completion</span>
-        ${renderVal(data.rockDocCompletion, 'Open document')}
-      </div>
-      <div style="display:grid;grid-template-columns:180px 1fr;gap:8px;align-items:center;padding:8px 0;">
-        <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:var(--ink-secondary)">Next quarter rocks</span>
-        ${renderVal(data.rockDocNext, 'Open document')}
-      </div>
-    </div>`;
 }
 
 function buildRocks(rocks) {
@@ -771,13 +735,6 @@ async function saveToSharePoint() {
   </table>` : ''}
 
   <table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
-    ${sectionHeader('Rock Documents')}
-    <tr><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;width:35%;font-weight:bold;">Current quarter rocks</td><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;">${empData.rockDocCurrent ? `<a href="${empData.rockDocCurrent}" style="color:#1a3a5c;">Open document →</a>` : '<span style="color:#9a9a93;font-style:italic">Not provided</span>'}</td></tr>
-    <tr><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;font-weight:bold;">Rock completion</td><td style="padding:8px 12px;border-bottom:1px solid #e2e0d8;font-family:Arial,sans-serif;font-size:13px;">${empData.rockDocCompletion ? (empData.rockDocCompletion.startsWith('http') ? `<a href="${empData.rockDocCompletion}" style="color:#1a3a5c;">Open document →</a>` : empData.rockDocCompletion) : '<span style="color:#9a9a93;font-style:italic">Not provided</span>'}</td></tr>
-    <tr><td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a18;font-weight:bold;">Next quarter rocks</td><td style="padding:8px 12px;font-family:Arial,sans-serif;font-size:13px;">${empData.rockDocNext ? (empData.rockDocNext.startsWith('http') ? `<a href="${empData.rockDocNext}" style="color:#1a3a5c;">Open document →</a>` : empData.rockDocNext) : '<span style="color:#9a9a93;font-style:italic">Not provided</span>'}</td></tr>
-  </table>
-
-  <table style="width:100%;border-collapse:collapse;background:#ffffff;margin-bottom:12px;">
     ${sectionHeader('Health Check — Employee ratings (1–10)')}
     ${healthRows}
     <tr style="background:#f7f6f2;"><td colspan="2" style="padding:8px 12px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#1a1a18;">Overall total: ${healthGrandTotal}/${healthGrandMax}</td></tr>
@@ -808,7 +765,7 @@ async function saveToSharePoint() {
 
   <div style="padding:16px 24px;background:#f7f6f2;margin-top:24px;border-top:2px solid #e2e0d8;">
 ===5x5_DATA_START=== --- MACHINE READABLE DATA (do not edit below this line) ---
-FIELD:employee_name|${empData.name || ''}|||FIELD:entity|${empData.entity || ''}|||FIELD:quarter|${empData.quarter || ''}|||FIELD:supervisor_name|${empData.supervisorName || ''}|||FIELD:date_completed|${new Date().toLocaleDateString()}|||FIELD:cv_emp_total|${cvEmpTotal}|||FIELD:cv_sup_total|${cvSupTotal}|||FIELD:cv_max|${cvMax}${cvFields}|||FIELD:rocks_emp_total|${rockEmpTotal}|||FIELD:rocks_sup_total|${rockSupTotal}|||FIELD:rocks_max|${rockMax}${rockFields}|||FIELD:health_total|${healthGrandTotal}|||FIELD:health_max|${healthGrandMax}|||FIELD:belonging|${healthCatTotals.belonging.total}|||FIELD:inspired|${healthCatTotals.inspired.total}|||FIELD:trusted|${healthCatTotals.trusted.total}|||FIELD:empowered|${healthCatTotals.empowered.total}|||FIELD:accountable|${healthCatTotals.accountable.total}|||FIELD:measured|${healthCatTotals.measured.total}|||FIELD:balanced|${healthCatTotals.balanced.total}${qFields}${devFields}|||FIELD:rock_doc_current|${(empData.rockDocCurrent || '').replace(/\|/g, '/')}|||FIELD:rock_doc_completion|${(empData.rockDocCompletion || '').replace(/\|/g, '/')}|||FIELD:rock_doc_next|${(empData.rockDocNext || '').replace(/\|/g, '/')}|||FIELD:supervisor_notes|${(supData.overallNotes || '').replace(/\|/g, '/').replace(/\n/g, ' ')}
+FIELD:employee_name|${empData.name || ''}|||FIELD:entity|${empData.entity || ''}|||FIELD:quarter|${empData.quarter || ''}|||FIELD:supervisor_name|${empData.supervisorName || ''}|||FIELD:date_completed|${new Date().toLocaleDateString()}|||FIELD:cv_emp_total|${cvEmpTotal}|||FIELD:cv_sup_total|${cvSupTotal}|||FIELD:cv_max|${cvMax}${cvFields}|||FIELD:rocks_emp_total|${rockEmpTotal}|||FIELD:rocks_sup_total|${rockSupTotal}|||FIELD:rocks_max|${rockMax}${rockFields}|||FIELD:health_total|${healthGrandTotal}|||FIELD:health_max|${healthGrandMax}|||FIELD:belonging|${healthCatTotals.belonging.total}|||FIELD:inspired|${healthCatTotals.inspired.total}|||FIELD:trusted|${healthCatTotals.trusted.total}|||FIELD:empowered|${healthCatTotals.empowered.total}|||FIELD:accountable|${healthCatTotals.accountable.total}|||FIELD:measured|${healthCatTotals.measured.total}|||FIELD:balanced|${healthCatTotals.balanced.total}${qFields}${devFields}|||FIELD:supervisor_notes|${(supData.overallNotes || '').replace(/\|/g, '/').replace(/\n/g, ' ')}
 --- END MACHINE READABLE DATA --- ===5x5_DATA_END===</div>
   </div>
 
@@ -849,7 +806,6 @@ if (empData) {
   buildCV(empData.cv || []);
   buildSeats(empData.seats || []);
   buildRocks(empData.rocks || []);
-  buildRockDocs(empData);
   buildHealth(empData.health || {});
   buildQuestions(empData.questions || []);
 } else {
