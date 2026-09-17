@@ -11,7 +11,7 @@
 <body>
 <div class="page">
 
-  <form id="main-form" novalidate>
+  <form id="main-form" novalidate hidden>
     <div class="header">
       <div class="header-eyebrow">The Speckled Trout Outfitters</div>
       <h1>S.M.A.R.T Rock Planner</h1>
@@ -125,6 +125,14 @@
     </div>
   </form>
 
+  <div class="auth-screen" id="auth-screen">
+    <div class="header-eyebrow">The Speckled Trout Outfitters</div>
+    <div class="lock" aria-hidden="true">🔒</div>
+    <h2>Sign in to continue</h2>
+    <p id="auth-message">Checking your Microsoft sign-in…</p>
+    <div class="btn-row"><button type="button" class="btn primary" id="auth-signin" hidden>Sign in with Microsoft</button></div>
+  </div>
+
   <div class="success-screen" id="success-screen">
     <div class="check">✓</div>
     <h2>Rock planner submitted</h2>
@@ -135,9 +143,10 @@
 
 <div class="sending-overlay" id="sending-overlay" aria-hidden="true">Submitting your rock planner…</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@4.30.0/lib/msal-browser.min.js" integrity="sha384-RGxxfG5yRS8DLU7ZJ8OoLhbV/BsJFHyPuMVHrTLbpj3t5Z15LnviJmaznKY/a7LZ" crossorigin="anonymous"></script>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/shared.js"></script>
+<script src="assets/js/auth.js"></script>
 <script src="assets/js/rock-planner.js"></script>
 </body>
 </html>

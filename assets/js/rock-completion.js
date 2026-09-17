@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  const { $, val, esc, wireEntitySupervisor, fillYears, supervisorFor, onSubmit, sendEmail,
-          showSuccess, fail, draft, email, fieldValue, todayISO, longDate, CONFIG } = TST;
+  const { $, val, esc, wireEntitySupervisor, fillYears, onSubmit, sendMail,
+          showSuccess, fail, draft, email, fieldValue, todayISO, longDate } = TST;
 
   const completeValue = () => { const r = document.querySelector('input[name="complete"]:checked'); return r ? r.value : ''; };
 
@@ -114,27 +114,27 @@ FIELD:NextStep3|${d.nextSteps[2]}|||
   async function submit() {
     const d = collect();
     validate(d);
-    const sup = supervisorFor(d.supervisorName);
-
-    await sendEmail(CONFIG.EMAILJS.TEMPLATES.COMPLETED_DOCUMENT, {
-      supervisor_name: sup.name,
-      supervisor_email: sup.email || CONFIG.ADMIN_EMAIL,
-      employee_name: d.name,
-      employee_email: d.empEmail,
-      quarter: d.quarter,
-      entity: d.entity,
-      completed_data: buildHtmlEmail(d)
+    await sendMail({
+      kind: 'rockCompletion', formType: 'rock-completion',
+      employee: d.name, employeeEmail: d.empEmail, quarter: d.quarter, supervisorName: d.supervisorName,
+      html: buildHtmlEmail(d)
     });
 
     draft.clear();
     showSuccess();
   }
 
-  /* ---------- start ---------- */
-  wireEntitySupervisor('emp-entity', 'emp-supervisor');
-  fillYears($('emp-year'));
-  document.querySelectorAll('input[name="complete"]').forEach((r) => r.addEventListener('change', toggleExplain));
-  draft.init('tst-rock-completion');
-  toggleExplain();
-  onSubmit(submit);
+  /* ---------- start (once signed in) ---------- */
+  function init(me) {
+    wireEntitySupervisor('emp-entity', 'emp-supervisor');
+    fillYears($('emp-year'));
+    document.querySelectorAll('input[name="complete"]').forEach((r) => r.addEventListener('change', toggleExplain));
+    $('emp-name').value = me.name;
+    draft.init('tst-rock-completion');
+    $('emp-email').value = me.email;
+    $('emp-email').readOnly = true;
+    toggleExplain();
+    onSubmit(submit);
+  }
+  TST.auth.ready.then(init);
 })();

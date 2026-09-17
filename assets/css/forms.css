@@ -244,5 +244,14 @@ button { font-family: var(--sans); }
   * { transition: none !important; scroll-behavior: auto !important; }
 }
 
+/* ---------- Sign-in ---------- */
+[hidden] { display: none !important; }
+.auth-screen { text-align: center; padding: 3rem 1rem; }
+.auth-screen .lock { font-size: 40px; margin-bottom: 1rem; }
+.auth-screen h2 { font-size: 22px; font-weight: normal; margin-bottom: 8px; }
+.auth-screen p { font-family: var(--sans); font-size: 14px; color: var(--ink-secondary); line-height: 1.6; max-width: 440px; margin: 0 auto; }
+.auth-screen .btn-row { justify-content: center; margin-top: 1.5rem; }
+.btn-link { background: none; border: none; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+
 /* ---------- Validation state ---------- */
 .invalid, .field-group .invalid { border-color: var(--warn) !important; box-shadow: 0 0 0 2px var(--warn-light) !important; }

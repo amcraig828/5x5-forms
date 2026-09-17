@@ -5,8 +5,8 @@
 (function () {
   'use strict';
 
-  const { $, val, esc, ratingRow, ratingValue, supervisorFor, decodePayload, onSubmit, sendEmail,
-          showSuccess, draft, CONFIG } = TST;
+  const { $, val, esc, ratingRow, ratingValue, supervisorFor, splitAddresses, decodePayload, onSubmit, sendMail,
+          showSuccess, notice, draft, CONFIG } = TST;
   const { CORE_VALUES, HEALTH_CATEGORIES, DISCUSSION_QUESTIONS } = TST_5X5;
 
   let emp = null;       // the employee's answers, expanded to a readable shape
@@ -245,23 +245,18 @@ FIELD:employee_name|${oneLine(emp.name)}|||FIELD:entity|${oneLine(emp.entity)}||
 
   async function submit() {
     const supData = collect();
-    const sup = supervisorFor(emp.supervisorName);
-
-    await sendEmail(CONFIG.EMAILJS.TEMPLATES.COMPLETED_DOCUMENT, {
-      employee_name: emp.name || '—',
-      supervisor_name: emp.supervisorName || '—',
-      supervisor_email: sup.email || CONFIG.ADMIN_EMAIL,
-      employee_email: emp.empEmail || '',
-      quarter: emp.quarter || '—',
-      entity: emp.entity || '—',
-      completed_data: buildCompletedData(supData)
+    await sendMail({
+      kind: 'completedReview', formType: '5x5-completed',
+      employee: emp.name, employeeEmail: emp.empEmail, quarter: emp.quarter, supervisorName: emp.supervisorName,
+      html: buildCompletedData(supData)
     });
 
     draft.clear();
     showSuccess();
   }
 
-  /* ---------- start ---------- */
+  /* ---------- start (once signed in) ---------- */
+  function init(me) {
   const params = new URLSearchParams(window.location.search);
   emp = params.get('sample') ? sampleData() : expand(decodePayload());
 
@@ -269,6 +264,12 @@ FIELD:employee_name|${oneLine(emp.name)}|||FIELD:entity|${oneLine(emp.entity)}||
     $('no-data-notice').classList.add('show');
     $('main-form').style.display = 'none';
     return;
+  }
+
+  /* Not the supervisor this was addressed to? Say so, but allow it (co-supervisors, admin cover). */
+  const expected = splitAddresses(supervisorFor(emp.supervisorName).email);
+  if (expected.length && !expected.includes(me.email)) {
+    notice(`You're signed in as <strong>${esc(me.email)}</strong>. This review was addressed to <strong>${esc(emp.supervisorName)}</strong> (${esc(expected.join(', '))}). You can still complete it; the completed review will be sent from your account.`, 'warn');
   }
 
   buildMeta();
@@ -287,4 +288,6 @@ FIELD:employee_name|${oneLine(emp.name)}|||FIELD:entity|${oneLine(emp.entity)}||
     beforeRestore: (extra) => { while (devRowCount < (extra.devRowCount || 0)) addDevRow(); }
   });
   onSubmit(submit);
+  }
+  TST.auth.ready.then(init);
 })();

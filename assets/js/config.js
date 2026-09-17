@@ -1,5 +1,5 @@
 /* ==========================================================================
-   config.js — THE ONE FILE TO EDIT when people, entities, or EmailJS change.
+   config.js — THE ONE FILE TO EDIT when people, entities, or sign-in change.
 
    Everything in here is shared by all four forms, so a change made once
    applies everywhere. Keep the punctuation exactly as shown (quotes, commas).
@@ -11,27 +11,32 @@ window.TST_CONFIG = {
   COMPANY: 'The Speckled Trout Outfitters',
 
   /* Where the forms are published. Used to build the link a supervisor
-     receives by email. No trailing slash. */
+     receives by email when the form is opened from a local file. No trailing slash. */
   SITE_URL: 'https://amcraig828.github.io/5x5-forms',
 
-  /* EmailJS account settings. The public key is meant to be public — restrict
-     it to this site's domain in the EmailJS dashboard (Account → Security). */
-  EMAILJS: {
-    PUBLIC_KEY: 'qbm0FluRDbLK432li',
-    SERVICE_ID: 'service_x2e8pjc',
-    TEMPLATES: {
-      /* "An employee finished their section" — sent to the supervisor with a link. */
-      EMPLOYEE_SUBMITTED: 'template_vi2f9lt',
-      /* "A completed document" — carries the full HTML plus the machine-readable
-         FIELD block that the Power Automate flow files into SharePoint. Used by
-         the supervisor review, rock planner, and rock completion forms. */
-      COMPLETED_DOCUMENT: 'template_pz1sj12'
-    }
+  /* Microsoft sign-in. Both values come from the "TST EOS Forms" app
+     registration in Microsoft Entra — see README.md → Microsoft sign-in setup.
+     Until they are filled in, every form shows a "sign-in not set up" message. */
+  AUTH: {
+    CLIENT_ID: '',   /* Application (client) ID */
+    TENANT_ID: ''    /* Directory (tenant) ID */
   },
 
-  /* Fallback recipient when a supervisor has no email listed. Also the
-     mailbox the SharePoint automation watches. */
-  ADMIN_EMAIL: 'ashley@thespeckledtrout.com',
+  /* The mailbox the SharePoint automation watches. Completed documents are
+     copied here. Also the fallback recipient if a supervisor has no email. */
+  AUTOMATION_MAILBOX: 'ashley@thespeckledtrout.com',
+
+  /* Subject line and extra recipients for each kind of email. The employee
+     who submits is always the sender; the supervisor(s) are always in "To".
+     {employee} and {quarter} are filled in automatically.
+     cc entries: 'automation' = AUTOMATION_MAILBOX, 'employee' = the employee
+     the document is about, or any literal email address. */
+  MAIL: {
+    employeeSubmitted: { subject: '5x5x5 submitted — {employee} — {quarter}',        cc: [] },
+    completedReview:   { subject: '5x5x5 completed review — {employee} — {quarter}', cc: ['automation', 'employee'] },
+    rockPlanner:       { subject: 'Rock planner — {employee} — {quarter}',           cc: ['automation'] },
+    rockCompletion:    { subject: 'Rock completion — {employee} — {quarter}',        cc: ['automation'] }
+  },
 
   /* Supervisors. The key is the label people pick in the dropdown.
      `email` may list several addresses separated by commas. */

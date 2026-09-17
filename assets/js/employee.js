@@ -5,7 +5,7 @@
   'use strict';
 
   const { $, val, checked, esc, ratingRow, ratingValue, wireEntitySupervisor, fillYears, supervisorFor,
-          encodePayload, pageUrl, onSubmit, sendEmail, showError, showSuccess, fail, draft, CONFIG } = TST;
+          encodePayload, pageUrl, onSubmit, sendMail, showError, showSuccess, fail, draft, email } = TST;
   const { CORE_VALUES, HEALTH_CATEGORIES, DISCUSSION_QUESTIONS, MIN_QUESTIONS, SEAT_ROWS, INITIAL_ROCK_ROWS } = TST_5X5;
 
   let rockCount = 0;
@@ -145,6 +145,22 @@
     ].filter(Boolean).join('\n');
   }
 
+  /* The email the supervisor receives. */
+  function notificationHtml(d, sup, link) {
+    const p = (html) => `<p style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;margin:0 0 12px;">${html}</p>`;
+    return `
+<div style="max-width:680px;margin:0 auto;font-family:Georgia,serif;color:#1a1a18;">
+  ${email.header('5×5×5 Quarterly Conversation', 'Employee section submitted')}
+  ${p(`Hi ${esc(sup.name)},`)}
+  ${p(`<strong>${esc(d.name)}</strong> has completed their employee section for <strong>${esc(d.quarter)}</strong>. Open the review below before your meeting — it shows their answers alongside space for your ratings and notes.`)}
+  <p style="margin:24px 0;"><a href="${esc(link)}" style="display:inline-block;background:#2a5c45;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;padding:12px 24px;border-radius:8px;">Open the supervisor review</a></p>
+  ${email.label('Summary')}
+  <pre style="font-family:Arial,sans-serif;font-size:13px;line-height:1.6;white-space:pre-wrap;background:#f7f6f2;border:1px solid #e2e0d8;border-radius:8px;padding:12px;margin:0 0 20px;">${esc(summaryText(d))}</pre>
+  <p style="font-family:Arial,sans-serif;font-size:12px;color:#9a9a93;line-height:1.5;">If the button doesn't work, copy this link into your browser:<br>${esc(link)}</p>
+  ${email.footer('Sent from the TSTO 5×5×5 employee form. The employee\'s answers are in the link above, not in this email.')}
+</div>`;
+  }
+
   function linkFallbackHtml(link, sup) {
     return `
       <div style="margin-top:6px">Copy this link and send it to ${esc(sup.name)}${sup.email ? ` (${esc(sup.email)})` : ''} so they can complete their review:</div>
@@ -161,18 +177,12 @@
     const sup = supervisorFor(d.supervisorName);
     const link = `${pageUrl('5x5-supervisor.html')}?d=${encodePayload(slim(d))}`;
 
-    const params = {
-      supervisor_name: sup.name,
-      supervisor_email: sup.email || CONFIG.ADMIN_EMAIL,
-      employee_name: d.name,
-      employee_email: d.empEmail,
-      quarter: d.quarter,
-      supervisor_link: link,
-      employee_summary: summaryText(d)
-    };
-
     try {
-      await sendEmail(CONFIG.EMAILJS.TEMPLATES.EMPLOYEE_SUBMITTED, params);
+      await sendMail({
+        kind: 'employeeSubmitted', formType: '5x5-employee',
+        employee: d.name, employeeEmail: d.empEmail, quarter: d.quarter, supervisorName: d.supervisorName,
+        html: notificationHtml(d, sup, link)
+      });
     } catch (e) {
       console.error(e);
       showError("We couldn't send the notification email. Your answers are still here — please try again in a moment.", { html: linkFallbackHtml(link, sup) });
@@ -187,18 +197,25 @@
     showSuccess();
   }
 
-  /* ---------- start ---------- */
-  wireEntitySupervisor('emp-entity', 'emp-supervisor');
-  fillYears($('emp-year'));
-  buildCoreValues();
-  buildSeats();
-  for (let i = 0; i < INITIAL_ROCK_ROWS; i++) addRock();
-  buildHealth();
-  buildQuestions();
-  $('add-rock').addEventListener('click', addRock);
-  draft.init('tst-5x5-employee', {
-    extra: () => ({ rockCount }),
-    beforeRestore: (extra) => { while (rockCount < (extra.rockCount || 0)) addRock(); }
-  });
-  onSubmit(submit);
+  /* ---------- start (once signed in) ---------- */
+  function init(me) {
+    wireEntitySupervisor('emp-entity', 'emp-supervisor');
+    fillYears($('emp-year'));
+    buildCoreValues();
+    buildSeats();
+    for (let i = 0; i < INITIAL_ROCK_ROWS; i++) addRock();
+    buildHealth();
+    buildQuestions();
+    $('add-rock').addEventListener('click', addRock);
+    $('emp-name').value = me.name;
+    draft.init('tst-5x5-employee', {
+      extra: () => ({ rockCount }),
+      beforeRestore: (extra) => { while (rockCount < (extra.rockCount || 0)) addRock(); }
+    });
+    /* The email is sent from the signed-in account, so it is not editable. */
+    $('emp-email').value = me.email;
+    $('emp-email').readOnly = true;
+    onSubmit(submit);
+  }
+  TST.auth.ready.then(init);
 })();

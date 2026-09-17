@@ -1,6 +1,7 @@
 /* ==========================================================================
    shared.js — helpers used by every form. Load order on each page:
-     config.js → (5x5-content.js) → vendor/lz-string.min.js → shared.js → <form>.js
+     msal-browser (CDN) → config.js → (5x5-content.js) → vendor/lz-string.min.js
+       → shared.js → auth.js → <form>.js
 
    Exposes a single global, `TST`. Nothing in here needs editing for routine
    changes to people or wording — see config.js and 5x5-content.js for that.
@@ -129,6 +130,18 @@ window.TST = (function () {
     window.scrollTo(0, 0);
   }
 
+  /* A banner under the page header. type: 'info' | 'warn'. Returns the element. */
+  function notice(html, type = 'info') {
+    const form = $('main-form');
+    const el = document.createElement('div');
+    el.className = `notice ${type} show`;
+    el.setAttribute('role', 'status');
+    el.innerHTML = html;
+    const header = form.querySelector('.header');
+    (header || form).insertAdjacentElement(header ? 'afterend' : 'afterbegin', el);
+    return el;
+  }
+
   /* ---------- submit lifecycle ---------- */
   function setBusy(isBusy) {
     const btn = $('submit-btn');
@@ -165,16 +178,52 @@ window.TST = (function () {
     });
   }
 
-  let emailReady = false;
-  async function sendEmail(templateId, params) {
-    if (!window.emailjs) throw new Error('The email library did not load.');
-    if (!emailReady) { window.emailjs.init({ publicKey: CONFIG.EMAILJS.PUBLIC_KEY }); emailReady = true; }
-    try {
-      return await window.emailjs.send(CONFIG.EMAILJS.SERVICE_ID, templateId, params);
-    } catch (e) {
-      const detail = (e && (e.text || e.message)) || String(e);
-      throw new Error('EmailJS send failed: ' + detail);
+  /* ---------- sending email ----------
+     The signed-in person sends the message from their own mailbox through
+     Microsoft Graph. Recipients and subject come from CONFIG.MAIL[kind].
+     `formType` is stamped into an x-tst-form mail header so the mailbox
+     automation can recognise form submissions without reading the body. */
+  const splitAddresses = (s) => String(s || '').split(',').map((a) => a.trim().toLowerCase()).filter(Boolean);
+  const recipient = (address) => ({ emailAddress: { address } });
+
+  async function sendMail({ kind, formType, employee, employeeEmail, quarter, supervisorName, html }) {
+    const spec = CONFIG.MAIL[kind];
+    if (!spec) throw new Error(`Unknown mail kind "${kind}"`);
+
+    const to = splitAddresses(supervisorFor(supervisorName).email);
+    if (!to.length) to.push(CONFIG.AUTOMATION_MAILBOX);
+    const cc = [];
+    (spec.cc || []).forEach((entry) => {
+      const addr = entry === 'automation' ? CONFIG.AUTOMATION_MAILBOX : entry === 'employee' ? employeeEmail : entry;
+      splitAddresses(addr).forEach((a) => { if (!to.includes(a) && !cc.includes(a)) cc.push(a); });
+    });
+    const subject = spec.subject.replace('{employee}', employee || '').replace('{quarter}', quarter || '');
+
+    const accessToken = await TST.auth.token();
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: {
+          subject,
+          body: { contentType: 'HTML', content: html },
+          toRecipients: to.map(recipient),
+          ccRecipients: cc.map(recipient),
+          internetMessageHeaders: [{ name: 'x-tst-form', value: formType }]
+        },
+        saveToSentItems: true
+      })
+    });
+
+    if (!res.ok) {
+      const err = new Error(`Graph sendMail failed: HTTP ${res.status}`);
+      err.userMessage =
+        res.status === 401 || res.status === 403 ? 'Your Microsoft sign-in has expired or lacks permission to send mail. Reload the page, sign in again, and resubmit — your answers are saved.' :
+        res.status === 429 ? 'Microsoft is limiting sends right now. Please wait a minute and try again.' :
+        "We couldn't send the email. Please try again in a moment.";
+      throw err;
     }
+    return { to, cc, subject };
   }
 
   /* ---------- passing data between pages ----------
@@ -261,15 +310,9 @@ window.TST = (function () {
       if (s && this.key) s.removeItem(this.key);
     },
     showNotice() {
-      const form = $('main-form');
       const when = this.savedAt ? new Date(this.savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'earlier';
-      const notice = document.createElement('div');
-      notice.className = 'notice info show';
-      notice.setAttribute('role', 'status');
-      notice.innerHTML = `We restored the answers you were working on (saved ${esc(when)}). <button type="button" class="btn-link" id="draft-clear">Start over</button>`;
-      const header = form.querySelector('.header');
-      (header || form).insertAdjacentElement(header ? 'afterend' : 'afterbegin', notice);
-      notice.querySelector('#draft-clear').addEventListener('click', () => {
+      const el = notice(`We restored the answers you were working on (saved ${esc(when)}). <button type="button" class="btn-link" id="draft-clear">Start over</button>`);
+      el.querySelector('#draft-clear').addEventListener('click', () => {
         if (!confirm('Clear everything you have entered and start over?')) return;
         this.clear();
         window.location.reload();
@@ -311,7 +354,7 @@ window.TST = (function () {
     CONFIG, $, val, checked, esc, debounce, todayISO, longDate, shortDate,
     wireEntitySupervisor, fillYears, supervisorFor,
     ratingRow, ratingValue, setRating,
-    clearError, showError, fail, showSuccess, onSubmit, sendEmail,
+    clearError, showError, fail, showSuccess, notice, onSubmit, sendMail, splitAddresses,
     encodePayload, decodePayload, pageUrl, draft, email, fieldValue
   };
 })();
