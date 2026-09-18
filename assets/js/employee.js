@@ -185,7 +185,7 @@
       });
     } catch (e) {
       console.error(e);
-      showError("We couldn't send the notification email. Your answers are still here — please try again in a moment.", { html: linkFallbackHtml(link, sup) });
+      showError(`We couldn't send the notification email. ${e.userMessage || ''} Your answers are still here.`, { html: linkFallbackHtml(link, sup) });
       $('copy-link').addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(link); $('copy-link').textContent = 'Copied'; }
         catch (err) { $('fallback-link').select(); }

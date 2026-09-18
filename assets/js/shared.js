@@ -199,28 +199,51 @@ window.TST = (function () {
     });
     const subject = spec.subject.replace('{employee}', employee || '').replace('{quarter}', quarter || '');
 
-    const accessToken = await TST.auth.token();
-    const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: {
-          subject,
-          body: { contentType: 'HTML', content: html },
-          toRecipients: to.map(recipient),
-          ccRecipients: cc.map(recipient),
-          internetMessageHeaders: [{ name: 'x-tst-form', value: formType }]
-        },
-        saveToSentItems: true
-      })
-    });
+    let accessToken;
+    try {
+      accessToken = await TST.auth.token();
+    } catch (e) {
+      if (e.userMessage) throw e;
+      const err = new Error('Token request failed: ' + (e.errorCode || e.message));
+      err.userMessage = `Couldn't get permission from Microsoft to send mail (${e.errorCode || e.message}). Reload the page, sign in again, and resubmit — your answers are saved.`;
+      throw err;
+    }
+
+    let res;
+    try {
+      res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: {
+            subject,
+            body: { contentType: 'HTML', content: html },
+            toRecipients: to.map(recipient),
+            ccRecipients: cc.map(recipient),
+            internetMessageHeaders: [{ name: 'x-tst-form', value: formType }]
+          },
+          saveToSentItems: true
+        })
+      });
+    } catch (e) {
+      const err = new Error('Graph sendMail network error: ' + e.message);
+      err.userMessage = `Couldn't reach Microsoft to send the email (${e.message}). Check your connection and try again.`;
+      throw err;
+    }
 
     if (!res.ok) {
-      const err = new Error(`Graph sendMail failed: HTTP ${res.status}`);
-      err.userMessage =
-        res.status === 401 || res.status === 403 ? 'Your Microsoft sign-in has expired or lacks permission to send mail. Reload the page, sign in again, and resubmit — your answers are saved.' :
+      /* Graph explains failures as { error: { code, message } }. Show that so problems are diagnosable. */
+      let code = '', message = '';
+      try { const j = await res.json(); code = (j.error && j.error.code) || ''; message = (j.error && j.error.message) || ''; } catch (e) { /* no body */ }
+      const detail = [`HTTP ${res.status}`, code, message].filter(Boolean).join(' · ');
+      const err = new Error(`Graph sendMail failed: ${detail}`);
+      const hint =
+        res.status === 401 ? 'Your Microsoft sign-in has expired. Reload the page, sign in again, and resubmit — your answers are saved.' :
+        res.status === 403 ? 'Microsoft refused to send mail from this account. Usually the Mail.Send permission has not been granted admin consent in the app registration.' :
+        res.status === 404 ? 'This Microsoft account does not appear to have an Exchange mailbox to send from.' :
         res.status === 429 ? 'Microsoft is limiting sends right now. Please wait a minute and try again.' :
-        "We couldn't send the email. Please try again in a moment.";
+        'Please try again in a moment.';
+      err.userMessage = `${hint} (${detail})`;
       throw err;
     }
     return { to, cc, subject };
