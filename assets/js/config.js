@@ -18,8 +18,8 @@ window.TST_CONFIG = {
      registration in Microsoft Entra — see README.md → Microsoft sign-in setup.
      Until they are filled in, every form shows a "sign-in not set up" message. */
   AUTH: {
-    CLIENT_ID: '7a6f5061-edaa-419a-a801-c65026df568b',   /* Application (client) ID */
-    TENANT_ID: 'd6932ffa-589a-479b-a3c3-ad004a2167a7'    /* Directory (tenant) ID */
+    CLIENT_ID: '7c4cb067-9b87-4c5e-b805-fe32ca4c95af',   /* Application (client) ID */
+    TENANT_ID: 'd20284df-da44-4c03-9d62-8b531b9bdf6d'    /* Directory (tenant) ID */
   },
 
   /* The mailbox the SharePoint automation watches. Completed documents are
