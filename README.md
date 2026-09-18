@@ -36,7 +36,7 @@ Hard-refresh the page (Shift + reload) if you don't see the change.
 
 The forms will show "Sign-in has not been set up" until this is done.
 
-1. Go to **entra.microsoft.com** → Identity → Applications → **App registrations** → **New registration**.
+1. Go to **entra.microsoft.com** and open **App registrations** (search for it in the top search box if it isn't in the left menu, or expand **Applications**). Click **New registration**.
    - Name: `TST EOS Forms`
    - Supported account types: **Accounts in this organizational directory only** (single tenant)
    - Redirect URI: platform **Single-page application (SPA)**, URI `https://amcraig828.github.io/5x5-forms/5x5-employee.html`
