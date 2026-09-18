@@ -60,10 +60,17 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   const addrs = (list) => (list || []).map((r) => r.emailAddress.address);
   const header = (m) => (m.internetMessageHeaders || []).find((h) => h.name === 'x-tst-form');
 
-  // ---- sign-in gate, as shipped (no IDs configured) ----
+  /* Serve config.js with AUTH overridden, so gate tests don't depend on the shipped IDs. */
+  const configWithAuth = (auth) => async (route) => {
+    const body = fs.readFileSync(path.join(ROOT, 'assets/js/config.js'), 'utf8') + `\nwindow.TST_CONFIG.AUTH = ${JSON.stringify(auth)};\n`;
+    route.fulfill({ contentType: 'application/javascript', body });
+  };
+
+  // ---- sign-in gate: IDs not configured ----
   console.log('sign-in gate');
   {
     const ctx = await browser.newContext();
+    await ctx.route('**/assets/js/config.js', configWithAuth({ CLIENT_ID: '', TENANT_ID: '' }));
     await ctx.route('**/@azure/msal-browser/**', (route) => route.fulfill({ contentType: 'application/javascript', body: 'window.msal = {};' }));
     const page = await ctx.newPage(); watch(page);
     await page.goto(`${base}/5x5-employee.html`);
@@ -78,11 +85,7 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   // ---- sign-in gate with real MSAL and no session: shows the button ----
   {
     const ctx = await browser.newContext();
-    await ctx.route('**/assets/js/config.js', async (route) => {
-      const body = fs.readFileSync(path.join(ROOT, 'assets/js/config.js'), 'utf8') +
-        "\nwindow.TST_CONFIG.AUTH = { CLIENT_ID: '11111111-1111-1111-1111-111111111111', TENANT_ID: '22222222-2222-2222-2222-222222222222' };\n";
-      route.fulfill({ contentType: 'application/javascript', body });
-    });
+    await ctx.route('**/assets/js/config.js', configWithAuth({ CLIENT_ID: '11111111-1111-1111-1111-111111111111', TENANT_ID: '22222222-2222-2222-2222-222222222222' }));
     await ctx.route('**/login.microsoftonline.com/**', (route) => route.abort());
     const page = await ctx.newPage(); watch(page);
     await page.goto(`${base}/rock-planner.html`);
