@@ -34,8 +34,8 @@ window.TST_CONFIG = {
   MAIL: {
     employeeSubmitted: { subject: '5x5x5 submitted — {employee} — {quarter}',        cc: [] },
     completedReview:   { subject: '5x5x5 completed review — {employee} — {quarter}', cc: ['automation', 'employee'] },
-    rockPlanner:       { subject: 'Rock planner — {employee} — {quarter}',           cc: ['automation'] },
-    rockCompletion:    { subject: 'Rock completion — {employee} — {quarter}',        cc: ['automation'] }
+    rockPlanner:       { subject: 'Rock planner — {employee} — {quarter}',           cc: ['automation', 'employee'] },
+    rockCompletion:    { subject: 'Rock completion — {employee} — {quarter}',        cc: ['automation', 'employee'] }
   },
 
   /* Supervisors. The key is the label people pick in the dropdown.
