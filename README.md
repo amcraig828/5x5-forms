@@ -84,6 +84,24 @@ record of everything submitted.
 If someone gets "Your account is not allowed to send as forms@…" on submit, they are not
 in the group yet (or the change hasn't propagated).
 
+### Adding a person (day-to-day checklist)
+
+Whoever manages the forms needs two Entra roles: **Guest Inviter** (to invite people
+without a company account) and **Exchange Recipient Administrator** (to manage the
+`TST Forms Senders` group). Then, for each new person:
+
+1. **Has a thespeckledtrout.com account?** Skip to step 3.
+2. **No company account:** Entra admin center (entra.microsoft.com) → Users → **New user**
+   → **Invite external user** → their personal email → Invite. Ask them to accept the
+   invitation email; they then sign in to the forms with that same address.
+3. Exchange admin center (admin.exchange.microsoft.com) → Recipients → **Groups** →
+   `TST Forms Senders` → **Members** → Add. Guests appear in the picker only after they
+   have accepted their invitation.
+4. Tell them the link: https://amcraig828.github.io/5x5-forms/. Allow up to an hour before
+   their first submit for the permission to apply.
+
+When someone leaves, remove them from the group (and delete the guest account if they had one).
+
 `SEND_FROM` in `config.js` can be switched to `'user'` to send from each person's own
 mailbox instead, falling back to the shared mailbox for people who don't have one. The
 default `'shared'` is simpler for the automation.
