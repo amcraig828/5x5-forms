@@ -2,9 +2,9 @@
    auth.js — Microsoft sign-in for every form. Loaded after shared.js.
 
    Uses MSAL.js (loaded from the CDN on each page) against the company's
-   Microsoft 365 tenant. The form stays hidden until someone from the tenant
-   is signed in; their submission is then emailed from their own mailbox via
-   Microsoft Graph (see sendMail in shared.js). Setup is in README.md.
+   Microsoft 365 tenant. The form stays hidden until someone in the directory
+   (staff, or an invited guest) is signed in; their submission is then emailed
+   through Microsoft Graph (see sendMail in shared.js). Setup is in README.md.
 
    Pages use it as:  TST.auth.ready.then(init)   — resolves with { name, email }
    ========================================================================== */
@@ -12,7 +12,7 @@
   'use strict';
 
   const { CONFIG, $, esc } = TST;
-  const SCOPES = ['User.Read', 'Mail.Send'];
+  const SCOPES = ['User.Read', 'Mail.Send', 'Mail.Send.Shared', 'email'];
 
   let pca = null;       // MSAL PublicClientApplication
   let account = null;   // the signed-in MSAL account
@@ -46,13 +46,18 @@
   function user() {
     if (fake) return fake;
     const claims = account.idTokenClaims || {};
-    return { name: claims.name || account.name || account.username, email: (claims.preferred_username || account.username || '').toLowerCase() };
+    /* Guests signed in with an outside address have a synthetic username like
+       "jane_gmail.com#EXT#@tenant.onmicrosoft.com"; their real address is in the
+       email claim. Staff have the same value in both. */
+    let email = String(claims.email || claims.preferred_username || account.username || '').toLowerCase();
+    if (email.includes('#ext#')) email = email.split('#ext#')[0].replace(/_(?=[^_]*$)/, '@');
+    return { name: claims.name || account.name || email, email };
   }
 
   async function token() {
     if (fake) return 'test-token';
     try {
-      const r = await pca.acquireTokenSilent({ scopes: ['Mail.Send'], account });
+      const r = await pca.acquireTokenSilent({ scopes: ['Mail.Send', 'Mail.Send.Shared'], account });
       return r.accessToken;
     } catch (e) {
       if (window.msal && e instanceof msal.InteractionRequiredAuthError) {
@@ -108,7 +113,7 @@
     }
 
     if (!account) {
-      screen('Sign in with your Speckled Trout Microsoft account to open this form.', { button: true });
+      screen('Sign in with your Speckled Trout Microsoft account to open this form. Invited guests: use the email address your invitation was sent to.', { button: true });
       $('auth-signin').addEventListener('click', () => pca.loginRedirect({ scopes: SCOPES }));
       return wait();
     }

@@ -179,10 +179,11 @@ window.TST = (function () {
   }
 
   /* ---------- sending email ----------
-     The signed-in person sends the message from their own mailbox through
-     Microsoft Graph. Recipients and subject come from CONFIG.MAIL[kind].
-     `formType` is stamped into an x-tst-form mail header so the mailbox
-     automation can recognise form submissions without reading the body. */
+     The signed-in person sends the message through Microsoft Graph, from the
+     shared FORMS_MAILBOX (or their own mailbox when SEND_FROM is 'user').
+     Recipients and subject come from CONFIG.MAIL[kind]. Two custom headers
+     let the mailbox automation recognise submissions without reading the body:
+       x-tst-form: <formType>          x-tst-submitted-by: <signed-in email> */
   const splitAddresses = (s) => String(s || '').split(',').map((a) => a.trim().toLowerCase()).filter(Boolean);
   const recipient = (address) => ({ emailAddress: { address } });
 
@@ -209,44 +210,63 @@ window.TST = (function () {
       throw err;
     }
 
-    let res;
-    try {
-      res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: {
-            subject,
-            body: { contentType: 'HTML', content: html },
-            toRecipients: to.map(recipient),
-            ccRecipients: cc.map(recipient),
-            internetMessageHeaders: [{ name: 'x-tst-form', value: formType }]
-          },
-          saveToSentItems: true
-        })
-      });
-    } catch (e) {
-      const err = new Error('Graph sendMail network error: ' + e.message);
-      err.userMessage = `Couldn't reach Microsoft to send the email (${e.message}). Check your connection and try again.`;
-      throw err;
+    const me = TST.auth.user();
+    const body = JSON.stringify({
+      message: {
+        subject,
+        body: { contentType: 'HTML', content: html },
+        toRecipients: to.map(recipient),
+        ccRecipients: cc.map(recipient),
+        internetMessageHeaders: [
+          { name: 'x-tst-form', value: formType },
+          { name: 'x-tst-submitted-by', value: me.email || '' }
+        ]
+      },
+      saveToSentItems: true
+    });
+
+    const sharedUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(CONFIG.FORMS_MAILBOX)}/sendMail`;
+    const post = async (url) => {
+      try {
+        return await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body });
+      } catch (e) {
+        const err = new Error('Graph sendMail network error: ' + e.message);
+        err.userMessage = `Couldn't reach Microsoft to send the email (${e.message}). Check your connection and try again.`;
+        throw err;
+      }
+    };
+    /* Graph explains failures as { error: { code, message } }. */
+    const explain = async (res) => {
+      let code = '', message = '';
+      try { const j = await res.json(); code = (j.error && j.error.code) || ''; message = (j.error && j.error.message) || ''; } catch (e) { /* no body */ }
+      return { code, detail: [`HTTP ${res.status}`, code, message].filter(Boolean).join(' · ') };
+    };
+
+    let from = CONFIG.SEND_FROM === 'user' ? 'user' : 'shared';
+    let res = await post(from === 'user' ? 'https://graph.microsoft.com/v1.0/me/sendMail' : sharedUrl);
+    let info = res.ok ? null : await explain(res);
+
+    /* No personal mailbox (guest, unlicensed)? Send from the shared mailbox instead. */
+    if (!res.ok && from === 'user' && res.status === 404 && CONFIG.FORMS_MAILBOX) {
+      from = 'shared';
+      res = await post(sharedUrl);
+      info = res.ok ? null : await explain(res);
     }
 
     if (!res.ok) {
-      /* Graph explains failures as { error: { code, message } }. Show that so problems are diagnosable. */
-      let code = '', message = '';
-      try { const j = await res.json(); code = (j.error && j.error.code) || ''; message = (j.error && j.error.message) || ''; } catch (e) { /* no body */ }
-      const detail = [`HTTP ${res.status}`, code, message].filter(Boolean).join(' · ');
-      const err = new Error(`Graph sendMail failed: ${detail}`);
+      const err = new Error(`Graph sendMail failed: ${info.detail}`);
       const hint =
         res.status === 401 ? 'Your Microsoft sign-in has expired. Reload the page, sign in again, and resubmit — your answers are saved.' :
+        res.status === 403 && from === 'shared' ? `Your account is not allowed to send as ${CONFIG.FORMS_MAILBOX}. Ask the administrator to add you to the forms senders group.` :
         res.status === 403 ? 'Microsoft refused to send mail from this account. Usually the Mail.Send permission has not been granted admin consent in the app registration.' :
+        res.status === 404 && from === 'shared' ? `The shared mailbox ${CONFIG.FORMS_MAILBOX} was not found. Check FORMS_MAILBOX in config.js.` :
         res.status === 404 ? 'This Microsoft account does not appear to have an Exchange mailbox to send from.' :
         res.status === 429 ? 'Microsoft is limiting sends right now. Please wait a minute and try again.' :
         'Please try again in a moment.';
-      err.userMessage = `${hint} (${detail})`;
+      err.userMessage = `${hint} (${info.detail})`;
       throw err;
     }
-    return { to, cc, subject };
+    return { to, cc, subject, from };
   }
 
   /* ---------- passing data between pages ----------

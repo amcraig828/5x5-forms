@@ -33,15 +33,18 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   /* A context signed in as `who`. Graph sendMail is captured into `sent`. */
   const sent = [];
   let failNext = false;
+  let noMailbox = false;   // when true, /me/sendMail answers 404 like an account without a mailbox
   async function signedInContext(who, viewport = { width: 1000, height: 900 }) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript((u) => { window.__TST_FAKE_USER = u; }, who);
     await ctx.route('**/@azure/msal-browser/**', (route) => route.fulfill({ contentType: 'application/javascript', body: 'window.msal = {};' }));
-    await ctx.route('**/graph.microsoft.com/v1.0/me/sendMail', (route) => {
+    await ctx.route('**/graph.microsoft.com/v1.0/**/sendMail', (route) => {
       const req = route.request();
       const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
-      sent.push({ auth: req.headers().authorization, body: JSON.parse(req.postData()) });
+      const url = req.url();
+      sent.push({ url, auth: req.headers().authorization, body: JSON.parse(req.postData()) });
+      if (noMailbox && url.includes('/me/sendMail')) return route.fulfill({ status: 404, headers: cors, contentType: 'application/json', body: JSON.stringify({ error: { code: 'MailboxNotEnabledForRESTAPI', message: 'The mailbox is either inactive, soft-deleted, or is hosted on-premise.' } }) });
       if (failNext) { failNext = false; return route.fulfill({ status: 500, headers: cors, body: '{}' }); }
       route.fulfill({ status: 202, headers: cors, body: '' });
     });
@@ -60,11 +63,12 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   const addrs = (list) => (list || []).map((r) => r.emailAddress.address);
   const header = (m) => (m.internetMessageHeaders || []).find((h) => h.name === 'x-tst-form');
 
-  /* Serve config.js with AUTH overridden, so gate tests don't depend on the shipped IDs. */
-  const configWithAuth = (auth) => async (route) => {
-    const body = fs.readFileSync(path.join(ROOT, 'assets/js/config.js'), 'utf8') + `\nwindow.TST_CONFIG.AUTH = ${JSON.stringify(auth)};\n`;
+  /* Serve config.js with some keys overridden, so tests don't depend on the shipped values. */
+  const configWith = (overrides) => async (route) => {
+    const body = fs.readFileSync(path.join(ROOT, 'assets/js/config.js'), 'utf8') + `\nObject.assign(window.TST_CONFIG, ${JSON.stringify(overrides)});\n`;
     route.fulfill({ contentType: 'application/javascript', body });
   };
+  const configWithAuth = (auth) => configWith({ AUTH: auth });
 
   // ---- sign-in gate: IDs not configured ----
   console.log('sign-in gate');
@@ -177,6 +181,8 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     check(addrs(m.ccRecipients).length === 0, 'employee notification has no cc');
     check(m.subject === `5x5x5 submitted — Test Person — Q3 ${new Date().getFullYear()}`, 'subject from config');
     check(header(m) && header(m).value === '5x5-employee', 'x-tst-form header');
+    check(sent[sent.length - 1].url.endsWith('/users/forms%40thespeckledtrout.com/sendMail'), 'sent from the shared forms mailbox by default');
+    check((m.internetMessageHeaders.find((h) => h.name === 'x-tst-submitted-by') || {}).value === EMPLOYEE.email, 'x-tst-submitted-by header carries the signed-in email');
     check(m.body.contentType === 'HTML' && m.body.content.includes('/5x5-supervisor.html?d=') && m.body.content.includes('Core Values total: 3/18'), 'body has review link and summary');
     check(m.body.content.includes('warm &amp; &lt;friendly&gt;') === false && !m.body.content.includes('<b>bold?</b>'), 'answers are not in the notification body');
     check((await page.evaluate(() => localStorage.getItem('tst-5x5-employee'))) === null, 'draft cleared after success');
@@ -314,6 +320,31 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     check(d.includes('✗ Not Complete'), 'status badge');
   }
   await sctx.close();
+
+  // ---- SEND_FROM 'user': own mailbox first, shared mailbox when there is none ----
+  console.log("SEND_FROM 'user' fallback");
+  {
+    const uctx = await signedInContext(EMPLOYEE);
+    await uctx.route('**/assets/js/config.js', configWith({ SEND_FROM: 'user' }));
+    const up = await uctx.newPage(); watch(up);
+    const fill = async () => {
+      await up.goto(`${base}/rock-completion.html`);
+      await up.fill('#emp-initials', 'ABC'); await up.selectOption('#emp-entity', 'TST Outpost'); await up.selectOption('#emp-supervisor', 'Emily / Erica Brinker');
+      await up.selectOption('#emp-quarter', 'Q1'); await up.fill('#rock-title', 'R'); await up.check('#complete-yes'); await up.fill('#accomplish-1', 'x');
+    };
+    await fill();
+    const before = sent.length;
+    await submit(up, '#success-screen.show');
+    check(sent.length === before + 1 && sent[before].url.endsWith('/me/sendMail'), "with a mailbox, 'user' mode sends from /me");
+    noMailbox = true; expectingFailure = true;   // the browser logs the intentional 404
+    await up.evaluate(() => localStorage.clear());
+    await fill();
+    const before2 = sent.length;
+    await submit(up, '#success-screen.show');
+    noMailbox = false; expectingFailure = false;
+    check(sent.length === before2 + 2 && sent[before2].url.endsWith('/me/sendMail') && sent[before2 + 1].url.endsWith('/users/forms%40thespeckledtrout.com/sendMail'), 'without a mailbox, falls back to the shared mailbox');
+    await uctx.close();
+  }
 
   // ---- mobile render ----
   const mctx = await signedInContext(EMPLOYEE, { width: 390, height: 844 });

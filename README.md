@@ -2,10 +2,10 @@
 
 Four browser-based forms for The Speckled Trout Outfitters' EOS process, hosted on
 GitHub Pages at **https://amcraig828.github.io/5x5-forms/**. There is no server. Each
-form runs in the browser; the person filling it in signs in with their Speckled Trout
-Microsoft account, and the form sends the result as an email **from their own mailbox**
-to their supervisor (and, for completed documents, to the automation mailbox that files
-them into SharePoint).
+form runs in the browser; the person filling it in signs in with Microsoft (a Speckled
+Trout account, or a guest invitation for people without one), and the form sends the
+result as an email **from the shared forms mailbox** to their supervisor (and, for
+completed documents, to the automation mailbox that files them into SharePoint).
 
 | Page | Who uses it | What happens on submit |
 |---|---|---|
@@ -47,7 +47,7 @@ The forms will show "Sign-in has not been set up" until this is done.
    - `https://amcraig828.github.io/5x5-forms/rock-completion.html`
    - For local testing also add `http://localhost:8000/5x5-employee.html` (and the other three at `http://localhost:8000/…`).
    - Save.
-3. **API permissions** → Add a permission → Microsoft Graph → **Delegated** → tick `Mail.Send` and `User.Read` → Add.
+3. **API permissions** → Add a permission → Microsoft Graph → **Delegated** → tick `Mail.Send`, `Mail.Send.Shared`, `User.Read` and `email` → Add.
    Then click **Grant admin consent for <tenant>** so staff never see a consent prompt.
 4. **Overview** → copy the **Application (client) ID** and **Directory (tenant) ID** into
    `assets/js/config.js` under `AUTH`, commit, push.
@@ -57,8 +57,36 @@ The forms will show "Sign-in has not been set up" until this is done.
 
 What staff see: the first time they open a form they click **Sign in with Microsoft**
 (usually just a click, since they're already signed in to Microsoft 365 in the browser).
-After that it's silent. Their name and email fill in automatically. Every submission is
-saved in their own **Sent Items**, which doubles as a record.
+After that it's silent. Their name and email fill in automatically.
+
+## Shared mailbox and guests (one time, by a Microsoft 365 admin)
+
+Every form sends from one shared mailbox, `forms@thespeckledtrout.com` (`FORMS_MAILBOX`
+in `config.js`). That gives the automation a single sender to trust, and it lets people
+who don't have a Speckled Trout mailbox submit too. Its **Sent Items** folder is the
+record of everything submitted.
+
+1. **Create the shared mailbox.** Exchange admin center (admin.exchange.microsoft.com) →
+   Recipients → **Mailboxes** → **Add a shared mailbox** → name `TST Forms`, email
+   `forms@thespeckledtrout.com`. Shared mailboxes are free; no license is needed.
+2. **Create a group that is allowed to send as it.** Exchange admin center → Recipients →
+   **Groups** → **Add a group** → type **Mail-enabled security** → name `TST Forms Senders`.
+3. **Grant the group Send As.** Open the `TST Forms` mailbox → **Delegation** → *Send as*
+   → **Edit** → add `TST Forms Senders` → Save. (PowerShell equivalent:
+   `Add-RecipientPermission forms@thespeckledtrout.com -AccessRights SendAs -Trustee "TST Forms Senders"`.)
+4. **Add everyone who fills in forms to that group** (staff and guests). Exchange permission
+   changes can take up to an hour to apply.
+5. **People without a Speckled Trout account:** invite them as guests. Entra admin center →
+   Users → **New user** → **Invite external user** → their personal email → Invite. They
+   accept the invitation once by email, then sign in to the forms with that address. Then
+   add them to `TST Forms Senders` too.
+
+If someone gets "Your account is not allowed to send as forms@…" on submit, they are not
+in the group yet (or the change hasn't propagated).
+
+`SEND_FROM` in `config.js` can be switched to `'user'` to send from each person's own
+mailbox instead, falling back to the shared mailbox for people who don't have one. The
+default `'shared'` is simpler for the automation.
 
 ## How the pieces fit
 
@@ -78,8 +106,9 @@ tests/e2e.js              browser tests (see Testing)
 
 ### Emails
 
-Each form sends one email through Microsoft Graph (`POST /me/sendMail`) as the
-signed-in user. `CONFIG.MAIL` in `config.js` sets the subject line and extra
+Each form sends one email through Microsoft Graph from the shared forms mailbox
+(`POST /users/forms@thespeckledtrout.com/sendMail`, authorised by the signed-in person's
+Send As permission). `CONFIG.MAIL` in `config.js` sets the subject line and extra
 recipients per form; the supervisor(s) chosen in the form are always the "To".
 
 | Form | `x-tst-form` header | Default subject | To | CC |
@@ -89,8 +118,9 @@ recipients per form; the supervisor(s) chosen in the form are always the "To".
 | Rock planner | `rock-planner` | `Rock planner — {employee} — {quarter}` | supervisor | automation mailbox |
 | Rock completion | `rock-completion` | `Rock completion — {employee} — {quarter}` | supervisor | automation mailbox |
 
-Every message carries a custom `x-tst-form` mail header naming the form. That header plus
-an internal sender address is how the mailbox automation should recognise a genuine
+Every message carries two custom mail headers: `x-tst-form` naming the form, and
+`x-tst-submitted-by` with the email address of the person who was signed in. Those headers
+plus the `forms@` sender address are how the mailbox automation should recognise a genuine
 submission (see the next two sections).
 
 ### The SharePoint automation contract
@@ -111,10 +141,11 @@ breaks, and `|` inside a value is replaced with `/`.
 The point of requiring sign-in is that only people in the company tenant can produce these
 emails. To get the full benefit, the agent that reads the automation mailbox should:
 
-1. **Only treat a message as a form submission when both are true:** the sender address is
-   `@thespeckledtrout.com` **and** the `x-tst-form` header is present (or, if headers are
-   not available to the agent, the subject matches one of the patterns above exactly).
-   Everything else is ordinary mail, never a form.
+1. **Only treat a message as a form submission when both are true:** the sender is
+   `forms@thespeckledtrout.com` **and** the `x-tst-form` header is present (or, if headers
+   are not available to the agent, the subject matches one of the patterns above exactly).
+   Everything else is ordinary mail, never a form. The `x-tst-submitted-by` header says who
+   was signed in when it was sent.
 2. **Extract the `FIELD:` block with a fixed parser before anything reaches the model.**
    Give the model structured fields, not the raw email body. If the block is missing or
    malformed, stop and flag it for a human rather than asking the model to "figure it out".
@@ -151,6 +182,8 @@ addressed to, the page says so but still lets them complete it.
 - **Supervisor page without data** shows an explanation instead of an empty form.
   Append `?sample=1` to preview it with made-up answers.
 - **"Not you?"** next to the signed-in name signs out, for shared computers.
+- **Guests** (people invited with a personal email) see their personal address as their
+  email on the form; that is where a supervisor's reply goes.
 
 ## Testing
 

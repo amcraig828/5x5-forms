@@ -26,8 +26,19 @@ window.TST_CONFIG = {
      copied here. Also the fallback recipient if a supervisor has no email. */
   AUTOMATION_MAILBOX: 'ashley@thespeckledtrout.com',
 
-  /* Subject line and extra recipients for each kind of email. The employee
-     who submits is always the sender; the supervisor(s) are always in "To".
+  /* The shared mailbox every form sends FROM. Everyone who fills in a form
+     (staff and invited guests) must have "Send As" permission on it — see
+     README.md → Shared mailbox and guests. */
+  FORMS_MAILBOX: 'forms@thespeckledtrout.com',
+
+  /* 'shared' = always send from FORMS_MAILBOX (recommended: one sender for the
+     automation to trust, and it works for guests without a mailbox).
+     'user'   = send from the signed-in person's own mailbox, falling back to
+     FORMS_MAILBOX when they don't have one. */
+  SEND_FROM: 'shared',
+
+  /* Subject line and extra recipients for each kind of email. The
+     supervisor(s) chosen in the form are always in "To".
      {employee} and {quarter} are filled in automatically.
      cc entries: 'automation' = AUTOMATION_MAILBOX, 'employee' = the employee
      the document is about, or any literal email address. */
