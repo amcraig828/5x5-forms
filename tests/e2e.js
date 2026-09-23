@@ -281,7 +281,7 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   check(await sp.locator('#success-screen').isVisible(), 'planner success');
   {
     const m = lastMail(); const d = m.body.content;
-    check(addrs(m.toRecipients).join(',') === 'joe@thespeckledtrout.com,phillip@thespeckledtrout.com' && addrs(m.ccRecipients).join(',') === 'ashley@thespeckledtrout.com', 'planner recipients');
+    check(addrs(m.toRecipients).join(',') === 'joe@thespeckledtrout.com,phillip@thespeckledtrout.com' && addrs(m.ccRecipients).join(',') === 'ashley@thespeckledtrout.com,erica@thespeckledtrout.com', 'planner recipients: supervisors; cc automation + employee');
     check(header(m).value === 'rock-planner' && m.subject.startsWith('Rock planner — Rock Person — Q4'), 'planner header + subject');
     check(d.includes('FIELD:Initials|RPX|||'), 'initials uppercased');
     check(d.includes('FIELD:EmployeeEmail|erica@thespeckledtrout.com|||'), 'employee email from account');
@@ -315,7 +315,8 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   check(await sp.locator('#success-screen').isVisible(), 'completion success');
   {
     const m = lastMail(); const d = m.body.content;
-    check(header(m).value === 'rock-completion' && addrs(m.ccRecipients).join(',') === 'ashley@thespeckledtrout.com', 'completion header + cc');
+    /* The signed-in employee here (erica@) is also one of the chosen supervisors, so she is already in To and is not duplicated into CC. */
+    check(header(m).value === 'rock-completion' && addrs(m.ccRecipients).join(',') === 'ashley@thespeckledtrout.com', 'completion header + cc automation (employee already in To)');
     check(d.includes('FIELD:FormType|RockCompletion|||') && d.includes('FIELD:IsComplete|No|||') && d.includes('FIELD:ExplainIncomplete|Ran out of time|||') && d.includes('FIELD:Accomplish1|Did a thing|||') && d.includes('FIELD:NextStep3||||'), 'completion FIELD block');
     check(d.includes('✗ Not Complete'), 'status badge');
   }
