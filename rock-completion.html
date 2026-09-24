@@ -120,8 +120,10 @@
     <div class="lock" aria-hidden="true">🔒</div>
     <h2>Sign in to continue</h2>
     <p id="auth-message">Checking your Microsoft sign-in…</p>
-    <div class="btn-row"><button type="button" class="btn primary" id="auth-signin" hidden>Sign in with Microsoft</button></div>
-    <p class="auth-alt" id="auth-guest-link" hidden><button type="button" class="btn-link" id="auth-guest-open">Don't have a Speckled Trout account?</button></p>
+    <div class="btn-row">
+      <button type="button" class="btn primary" id="auth-signin" hidden>Sign in with Microsoft</button>
+      <span id="auth-guest-link" hidden><button type="button" class="btn primary" id="auth-guest-open">Sign in with personal email</button></span>
+    </div>
     <div class="guest-panel" id="auth-guest-panel" hidden>
       <label for="guest-passphrase">Team passphrase</label>
       <input type="password" id="guest-passphrase" autocomplete="off" autocapitalize="off">

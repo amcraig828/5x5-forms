@@ -254,7 +254,7 @@ button { font-family: var(--sans); }
 .btn-link { background: none; border: none; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
 
 /* ---------- Guest access ---------- */
-.auth-alt { font-family: var(--sans); font-size: 12px; color: var(--ink-tertiary); margin-top: 1.25rem; }
+.auth-screen .btn-row { gap: 12px; }
 .guest-panel { max-width: 320px; margin: 1.25rem auto 0; display: flex; flex-direction: column; gap: 8px; text-align: left; }
 .guest-panel label { font-family: var(--sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-secondary); }
 .guest-panel input { border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); font-family: var(--sans); font-size: 14px; padding: 9px 10px; }
