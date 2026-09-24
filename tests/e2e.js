@@ -37,7 +37,6 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   async function signedInContext(who, viewport = { width: 1000, height: 900 }) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript((u) => { window.__TST_FAKE_USER = u; }, who);
-    await ctx.route('**/@azure/msal-browser/**', (route) => route.fulfill({ contentType: 'application/javascript', body: 'window.msal = {};' }));
     await ctx.route('**/graph.microsoft.com/v1.0/**/sendMail', (route) => {
       const req = route.request();
       const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
@@ -69,18 +68,33 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     route.fulfill({ contentType: 'application/javascript', body });
   };
   const configWithAuth = (auth) => configWith({ AUTH: auth });
+  const GUEST_CFG = { ENABLED: true, PASSPHRASE_SHA256: '59d7fb5763f95e6bb8556ea91d13a763e89a59730db89994e9da4d1d77753340', RECAPTCHA_SITE_KEY: 'test-site-key',
+    EMAILJS: { PUBLIC_KEY: 'pk', SERVICE_ID: 'service_x2e8pjc', TEMPLATES: { EMPLOYEE_SUBMITTED: 'template_vi2f9lt', COMPLETED_DOCUMENT: 'template_pz1sj12' } } };
+  /* Stubs for the guest path: a fake reCAPTCHA checkbox and an EmailJS SDK that records sends. */
+  async function stubGuestLibraries(ctx) {
+    await ctx.route('**/www.google.com/recaptcha/api.js**', (route) => route.fulfill({ contentType: 'application/javascript', body: `
+      window.grecaptcha = {
+        render(el, opts) { document.getElementById(el).innerHTML = '<label><input type="checkbox" id="fake-captcha"> not a robot (' + opts.sitekey + ')</label>'; return 7; },
+        getResponse() { const c = document.getElementById('fake-captcha'); return c && c.checked ? 'captcha-token' : ''; },
+        reset() { const c = document.getElementById('fake-captcha'); if (c) c.checked = false; }
+      };
+      const cb = new URL(document.currentScript.src).searchParams.get('onload'); if (cb && window[cb]) window[cb]();` }));
+    await ctx.route('**/@emailjs/**', (route) => route.fulfill({ contentType: 'application/javascript', body: `
+      window.__ejs = []; window.emailjs = { init() {}, async send(s, t, p) { window.__ejs.push({ service: s, template: t, params: p });
+        if (window.__ejsFail) { window.__ejsFail = false; throw { status: 400, text: 'reCAPTCHA verification failed' }; } return { status: 200 }; } };` }));
+  }
 
   // ---- sign-in gate: IDs not configured ----
   console.log('sign-in gate');
   {
     const ctx = await browser.newContext();
     await ctx.route('**/assets/js/config.js', configWithAuth({ CLIENT_ID: '', TENANT_ID: '' }));
-    await ctx.route('**/@azure/msal-browser/**', (route) => route.fulfill({ contentType: 'application/javascript', body: 'window.msal = {};' }));
     const page = await ctx.newPage(); watch(page);
     await page.goto(`${base}/5x5-employee.html`);
     check(await page.locator('#auth-screen').isVisible(), 'auth screen shown when sign-in not configured');
     check((await page.locator('#auth-message').textContent()).includes('not been set up'), 'explains sign-in is not set up');
     check(await page.locator('#auth-signin').isHidden(), 'no sign-in button when not configured');
+    check(await page.locator('#auth-guest-link').isHidden(), 'guest link hidden while RECAPTCHA_SITE_KEY is blank');
     check(await page.locator('#main-form').isHidden(), 'form hidden without sign-in');
     check(await page.locator('#cv-body tr').count() === 0, 'form not even built without sign-in');
     await page.screenshot({ path: `${OUT}/gate-unconfigured.png` });
@@ -89,7 +103,7 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
   // ---- sign-in gate with real MSAL and no session: shows the button ----
   {
     const ctx = await browser.newContext();
-    await ctx.route('**/assets/js/config.js', configWithAuth({ CLIENT_ID: '11111111-1111-1111-1111-111111111111', TENANT_ID: '22222222-2222-2222-2222-222222222222' }));
+    await ctx.route('**/assets/js/config.js', configWith({ AUTH: { CLIENT_ID: '11111111-1111-1111-1111-111111111111', TENANT_ID: '22222222-2222-2222-2222-222222222222' }, GUEST_ACCESS: GUEST_CFG }));
     await ctx.route('**/login.microsoftonline.com/**', (route) => route.abort());
     const page = await ctx.newPage(); watch(page);
     await page.goto(`${base}/rock-planner.html`);
@@ -97,6 +111,7 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     await page.locator('#auth-signin').waitFor({ state: 'visible', timeout: 30000 });
     check((await page.locator('#auth-message').textContent()).includes('Sign in with your'), 'real MSAL with no session shows the Sign in button');
     check(await page.locator('#main-form').isHidden(), 'form stays hidden until signed in');
+    check(await page.locator('#auth-guest-link').isVisible(), 'guest link offered next to the sign-in button');
     await page.screenshot({ path: `${OUT}/gate-signin.png` });
     await ctx.close();
   }
@@ -345,6 +360,83 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     noMailbox = false; expectingFailure = false;
     check(sent.length === before2 + 2 && sent[before2].url.endsWith('/me/sendMail') && sent[before2 + 1].url.endsWith('/users/forms%40thespeckledtrout.com/sendMail'), 'without a mailbox, falls back to the shared mailbox');
     await uctx.close();
+  }
+
+  // ---- guest access (passphrase + captcha, EmailJS) ----
+  console.log('guest access');
+  {
+    const gctx = await browser.newContext({ viewport: { width: 1000, height: 900 } });
+    await stubGuestLibraries(gctx);
+    await gctx.route('**/assets/js/config.js', configWith({ AUTH: { CLIENT_ID: '', TENANT_ID: '' }, GUEST_ACCESS: GUEST_CFG }));
+    const g = await gctx.newPage(); watch(g);
+    await g.goto(`${base}/5x5-employee.html`);
+    check(await g.locator('#auth-guest-link').isVisible() && await g.locator('#auth-guest-panel').isHidden(), 'guest link shown, panel closed');
+    await g.click('#auth-guest-open');
+    check(await g.locator('#auth-guest-panel').isVisible(), 'panel opens');
+    await g.fill('#guest-passphrase', 'wrong');
+    await g.click('#auth-guest-continue');
+    await g.locator('#guest-error').filter({ hasText: "isn't right" }).waitFor();
+    check(await g.locator('#main-form').isHidden(), 'wrong passphrase keeps the form hidden');
+    await g.fill('#guest-passphrase', 'Fall26');
+    await g.press('#guest-passphrase', 'Enter');
+    await g.locator('#main-form').waitFor({ state: 'visible' });
+    check(await g.locator('#auth-screen').isHidden(), 'right passphrase reveals the form');
+    check((await g.locator('.header-links').textContent()).includes('Continuing as a guest'), 'header says guest');
+    check(await g.locator('#emp-email').inputValue() === '' && !(await g.locator('#emp-email').evaluate((e) => e.readOnly)), 'guest types their own email');
+    await g.locator('#fake-captcha').waitFor();
+    check(true, 'captcha widget mounted next to submit');
+    await g.screenshot({ path: `${OUT}/guest-form.png`, fullPage: true });
+
+    await g.fill('#emp-name', 'Guest Person');
+    await g.selectOption('#emp-entity', 'TST Outpost');
+    await g.selectOption('#emp-supervisor', 'Emily / Erica Brinker');
+    await g.selectOption('#emp-quarter', 'Q3');
+    await g.fill('#emp-email', 'guest@gmail.com');
+    await g.check('#q-check-0'); await g.fill('#q-text-0', 'A');
+    await g.check('#q-check-1'); await g.fill('#q-text-1', 'B');
+    await submit(g, '#error-msg.show');
+    check((await g.locator('#error-msg').textContent()).includes('not a robot'), 'submit without captcha is refused');
+    await g.check('#fake-captcha');
+    await g.evaluate(() => { window.__ejsFail = true; }); expectingFailure = true;
+    await submit(g, '#error-msg.show'); expectingFailure = false;
+    check((await g.locator('#error-msg').textContent()).includes('rejected') && !(await g.locator('#fake-captcha').isChecked()), 'EmailJS captcha rejection resets the checkbox');
+    await g.check('#fake-captcha');
+    await submit(g, '#success-screen.show');
+    const e1 = await g.evaluate(() => window.__ejs[window.__ejs.length - 1]);
+    check(e1.service === 'service_x2e8pjc' && e1.template === 'template_vi2f9lt', 'guest 5x5 uses the EmailJS notify template');
+    check(e1.params['g-recaptcha-response'] === 'captcha-token', 'captcha token sent to EmailJS');
+    check(e1.params.supervisor_email === 'erica@thespeckledtrout.com,emily@thespeckledtrout.com' && e1.params.employee_email === 'guest@gmail.com', 'guest recipients + typed email');
+    check(e1.params.supervisor_link.includes('/5x5-supervisor.html?d=') && e1.params.employee_summary.includes('Core Values total') && e1.params.completed_data.includes('Open the supervisor review'), 'legacy params + full HTML both present');
+    check(e1.params.subject.startsWith('5x5x5 submitted — Guest Person — Q3'), 'subject param');
+
+    await g.goto(`${base}/rock-completion.html`);
+    await g.locator('#main-form').waitFor({ state: 'visible' });
+    check(await g.locator('#auth-guest-panel').isHidden() && (await g.locator('.header-links').textContent()).includes('guest'), 'guest session carries across forms without re-entering the passphrase');
+    await g.fill('#emp-name', 'Guest Person'); await g.fill('#emp-initials', 'GP'); await g.selectOption('#emp-entity', 'TST Outfitters');
+    await g.selectOption('#emp-supervisor', 'Will Brinker'); await g.selectOption('#emp-quarter', 'Q2'); await g.fill('#emp-email', 'guest@gmail.com');
+    await g.fill('#rock-title', 'R'); await g.check('#complete-yes'); await g.fill('#accomplish-1', 'x');
+    await g.locator('#fake-captcha').waitFor(); await g.check('#fake-captcha');
+    await submit(g, '#success-screen.show');
+    const e2 = await g.evaluate(() => window.__ejs[window.__ejs.length - 1]);
+    check(e2.template === 'template_pz1sj12' && e2.params.entity === 'TST Outfitters' && e2.params.completed_data.includes('===ROCK_COMPLETION_DATA_START===') && e2.params.cc_email === 'ashley@thespeckledtrout.com,guest@gmail.com', 'guest rock completion: completed template, entity, FIELD block, cc');
+
+    await g.click('#auth-signout').catch(() => {});
+    await g.goto(`${base}/5x5-employee.html`);
+    await g.evaluate(() => sessionStorage.clear());
+    await g.reload();
+    check(await g.locator('#main-form').isHidden() && await g.locator('#auth-guest-link').isVisible(), '"Sign in instead" / cleared session returns to the gate');
+
+    await g.goto(`${base}/5x5-supervisor.html?sample=1`);
+    check(await g.locator('#auth-guest-link').count() === 0 && await g.locator('#main-form').isHidden(), 'supervisor page never offers guest access');
+    await gctx.close();
+
+    const offctx = await browser.newContext();
+    await stubGuestLibraries(offctx);
+    await offctx.route('**/assets/js/config.js', configWith({ AUTH: { CLIENT_ID: '', TENANT_ID: '' }, GUEST_ACCESS: Object.assign({}, GUEST_CFG, { ENABLED: false }) }));
+    const off = await offctx.newPage(); watch(off);
+    await off.goto(`${base}/rock-planner.html`);
+    check(await off.locator('#auth-guest-link').isHidden(), 'GUEST_ACCESS.ENABLED=false hides the guest link');
+    await offctx.close();
   }
 
   // ---- mobile render ----

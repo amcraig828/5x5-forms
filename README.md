@@ -106,6 +106,41 @@ When someone leaves, remove them from the group (and delete the guest account if
 mailbox instead, falling back to the shared mailbox for people who don't have one. The
 default `'shared'` is simpler for the automation.
 
+## Temporary guest access (people who can't sign in yet)
+
+While guest invitations are being sorted out, the three employee-facing forms offer a
+second door: a small "Don't have a Speckled Trout account?" link under the sign-in button.
+The person enters the **team passphrase**, fills in the form (typing their own name and
+email), ticks **"I'm not a robot"** next to the submit button, and the email is sent through
+**EmailJS** instead of the shared mailbox. The supervisor review never offers this.
+
+This is deliberately the weaker path: the passphrase can be shared, and the only check a
+computer can't fake is the reCAPTCHA, which EmailJS verifies on its servers. Turn it off
+(`GUEST_ACCESS.ENABLED: false` in `config.js`) as soon as everyone can sign in.
+
+Setup (one time):
+
+1. Create reCAPTCHA keys at https://www.google.com/recaptcha/admin/create — type
+   **Challenge (v2) → "I'm not a robot" checkbox**, domains `amcraig828.github.io` and
+   `localhost`. You get a **site key** and a **secret key**.
+2. Put the site key in `config.js` → `GUEST_ACCESS.RECAPTCHA_SITE_KEY`. The guest link
+   stays hidden until this is filled in.
+3. In EmailJS (dashboard.emailjs.com) → Email Templates → open `template_vi2f9lt` →
+   Settings → **reCAPTCHA** → enable and paste the **secret** key → Save. Repeat for
+   `template_pz1sj12`. From then on EmailJS refuses sends without a solved captcha.
+4. Optional but recommended, so guest emails look the same as everyone else's: in each
+   template set **To** = `{{supervisor_email}}`, **Cc** = `{{cc_email}}`,
+   **Subject** = `{{subject}}`, and body = `{{{completed_data}}}` (triple braces).
+5. Still in EmailJS → Account → Security: keep the domain allow-list on for
+   `amcraig828.github.io`.
+
+Changing the passphrase: open any form, press F12 for the browser console, run
+`TST.guest.hash('new phrase')` and paste the result into `PASSPHRASE_SHA256`.
+
+Mailbox agent note: guest submissions arrive from the EmailJS sending address without the
+`x-tst-*` headers, so the agent must also accept mail from that address whose subject
+matches the patterns above, for as long as guest access is on.
+
 ## How the pieces fit
 
 ```
@@ -115,7 +150,7 @@ assets/js/config.js       people, entities, subjects, sign-in IDs   ← edit thi
 assets/js/5x5-content.js  5×5×5 question wording                    ← and this
 assets/js/shared.js       helpers every page uses (rating buttons, validation,
                           draft autosave, sending mail via Graph, link encoding)
-assets/js/auth.js         Microsoft sign-in (MSAL.js) and the sign-in screen
+assets/js/auth.js         Microsoft sign-in (MSAL.js), the sign-in screen, guest passphrase
 assets/js/<page>.js       the logic for one page
 assets/vendor/            lz-string (compresses the supervisor link)
 tests/e2e.js              browser tests (see Testing)
@@ -202,6 +237,8 @@ addressed to, the page says so but still lets them complete it.
 - **"Not you?"** next to the signed-in name signs out, for shared computers.
 - **Guests** (people invited with a personal email) see their personal address as their
   email on the form; that is where a supervisor's reply goes.
+- **Passphrase guests** (temporary guest access) stay unlocked for the browser tab's
+  session; "Sign in instead" in the header clears it.
 
 ## Testing
 

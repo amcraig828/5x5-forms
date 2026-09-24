@@ -187,7 +187,7 @@ window.TST = (function () {
   const splitAddresses = (s) => String(s || '').split(',').map((a) => a.trim().toLowerCase()).filter(Boolean);
   const recipient = (address) => ({ emailAddress: { address } });
 
-  async function sendMail({ kind, formType, employee, employeeEmail, quarter, supervisorName, html }) {
+  async function sendMail({ kind, formType, employee, employeeEmail, quarter, supervisorName, html, extra = {} }) {
     const spec = CONFIG.MAIL[kind];
     if (!spec) throw new Error(`Unknown mail kind "${kind}"`);
 
@@ -200,6 +200,9 @@ window.TST = (function () {
     });
     const subject = spec.subject.replace('{employee}', employee || '').replace('{quarter}', quarter || '');
 
+    const me = TST.auth.user();
+    if (me.guest) return sendViaEmailJS({ kind, formType, employee, employeeEmail, quarter, supervisorName, html, extra, to, cc, subject });
+
     let accessToken;
     try {
       accessToken = await TST.auth.token();
@@ -210,7 +213,6 @@ window.TST = (function () {
       throw err;
     }
 
-    const me = TST.auth.user();
     const body = JSON.stringify({
       message: {
         subject,
@@ -388,6 +390,43 @@ window.TST = (function () {
     td: (content, extra = '') => `<td style="padding:6px 8px;border:1px solid #e2e0d8;${extra}">${content}</td>`,
     th: (content, extra = '') => `<th style="text-align:left;padding:6px 8px;border:1px solid #e2e0d8;font-size:11px;${extra}">${content}</th>`
   };
+
+  /* Guest path (no Microsoft account): EmailJS, gated by a reCAPTCHA that
+     EmailJS verifies on its servers. Params cover both the old templates and
+     a "same email as Graph" template (To={{supervisor_email}}, CC={{cc_email}},
+     Subject={{subject}}, body {{{completed_data}}}). */
+  async function sendViaEmailJS({ kind, employee, employeeEmail, quarter, supervisorName, html, extra, to, cc, subject }) {
+    const G = CONFIG.GUEST_ACCESS && CONFIG.GUEST_ACCESS.EMAILJS;
+    if (!G) throw new Error('Guest email is not configured');
+    const captcha = TST.guest.captchaToken();
+    if (!captcha) throw fail("Please tick \"I'm not a robot\" above the submit button.");
+    await TST.guest.libraries();
+    window.emailjs.init({ publicKey: G.PUBLIC_KEY });
+    const templateId = kind === 'employeeSubmitted' ? G.TEMPLATES.EMPLOYEE_SUBMITTED : G.TEMPLATES.COMPLETED_DOCUMENT;
+    const params = Object.assign({
+      supervisor_name: supervisorFor(supervisorName).name,
+      supervisor_email: to.join(','),
+      cc_email: cc.join(','),
+      employee_name: employee || '',
+      employee_email: employeeEmail || '',
+      quarter: quarter || '',
+      subject,
+      completed_data: html,
+      'g-recaptcha-response': captcha
+    }, extra);
+    try {
+      await window.emailjs.send(G.SERVICE_ID, templateId, params);
+    } catch (e) {
+      TST.guest.resetCaptcha();
+      const detail = (e && (e.text || e.message)) || String(e);
+      const err = new Error('EmailJS send failed: ' + detail);
+      err.userMessage = /captcha/i.test(detail)
+        ? 'The "I\'m not a robot" check was rejected. Please tick it again and resubmit.'
+        : `Couldn't send the email (${detail}). Please try again in a moment.`;
+      throw err;
+    }
+    return { to, cc, subject, from: 'emailjs' };
+  }
 
   /* Values written into the machine-readable FIELD block must stay on one
      line and must not contain the "|" separator. */

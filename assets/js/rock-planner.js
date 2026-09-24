@@ -182,7 +182,8 @@ ${d.steps.map((s) => `FIELD:Step${s.num}|${s.date}~~${s.activity.replace(/\r?\n/
     await sendMail({
       kind: 'rockPlanner', formType: 'rock-planner',
       employee: d.name, employeeEmail: d.empEmail, quarter: d.quarter, supervisorName: d.supervisorName,
-      html: buildHtmlEmail(d)
+      html: buildHtmlEmail(d),
+      extra: { entity: d.entity }   /* used by the guest (EmailJS) path only */
     });
 
     draft.clear();
@@ -196,10 +197,12 @@ ${d.steps.map((s) => `FIELD:Step${s.num}|${s.date}~~${s.activity.replace(/\r?\n/
     buildSmart();
     buildSteps();
     buildResources();
-    $('emp-name').value = me.name;
+    if (me.name) $('emp-name').value = me.name;
     draft.init('tst-rock-planner');
-    $('emp-email').value = me.email;
-    $('emp-email').readOnly = true;
+    if (!me.guest) {   /* guests type their own; staff send from their account */
+      $('emp-email').value = me.email;
+      $('emp-email').readOnly = true;
+    }
     onSubmit(submit);
   }
   TST.auth.ready.then(init);

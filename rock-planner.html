@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%232a5c45%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-family=%27Georgia,serif%27 font-size=%2717%27 fill=%27white%27 text-anchor=%27middle%27%3ET%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/css/forms.css">
 </head>
-<body>
+<body data-guest-access="allowed">
 <div class="page">
 
   <form id="main-form" novalidate hidden>
@@ -131,6 +131,13 @@
     <h2>Sign in to continue</h2>
     <p id="auth-message">Checking your Microsoft sign-in…</p>
     <div class="btn-row"><button type="button" class="btn primary" id="auth-signin" hidden>Sign in with Microsoft</button></div>
+    <p class="auth-alt" id="auth-guest-link" hidden><button type="button" class="btn-link" id="auth-guest-open">Don't have a Speckled Trout account?</button></p>
+    <div class="guest-panel" id="auth-guest-panel" hidden>
+      <label for="guest-passphrase">Team passphrase</label>
+      <input type="password" id="guest-passphrase" autocomplete="off" autocapitalize="off">
+      <button type="button" class="btn primary" id="auth-guest-continue">Continue as guest</button>
+      <p class="guest-error" id="guest-error" role="alert"></p>
+    </div>
   </div>
 
   <div class="success-screen" id="success-screen">

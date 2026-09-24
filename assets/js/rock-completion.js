@@ -117,7 +117,8 @@ FIELD:NextStep3|${d.nextSteps[2]}|||
     await sendMail({
       kind: 'rockCompletion', formType: 'rock-completion',
       employee: d.name, employeeEmail: d.empEmail, quarter: d.quarter, supervisorName: d.supervisorName,
-      html: buildHtmlEmail(d)
+      html: buildHtmlEmail(d),
+      extra: { entity: d.entity }   /* used by the guest (EmailJS) path only */
     });
 
     draft.clear();
@@ -129,10 +130,12 @@ FIELD:NextStep3|${d.nextSteps[2]}|||
     wireEntitySupervisor('emp-entity', 'emp-supervisor');
     fillYears($('emp-year'));
     document.querySelectorAll('input[name="complete"]').forEach((r) => r.addEventListener('change', toggleExplain));
-    $('emp-name').value = me.name;
+    if (me.name) $('emp-name').value = me.name;
     draft.init('tst-rock-completion');
-    $('emp-email').value = me.email;
-    $('emp-email').readOnly = true;
+    if (!me.guest) {   /* guests type their own; staff send from their account */
+      $('emp-email').value = me.email;
+      $('emp-email').readOnly = true;
+    }
     toggleExplain();
     onSubmit(submit);
   }

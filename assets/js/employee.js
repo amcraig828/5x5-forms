@@ -181,9 +181,11 @@
       await sendMail({
         kind: 'employeeSubmitted', formType: '5x5-employee',
         employee: d.name, employeeEmail: d.empEmail, quarter: d.quarter, supervisorName: d.supervisorName,
-        html: notificationHtml(d, sup, link)
+        html: notificationHtml(d, sup, link),
+        extra: { supervisor_link: link, employee_summary: summaryText(d) }   /* used by the guest (EmailJS) path only */
       });
     } catch (e) {
+      if (e.isValidation) throw e;   /* e.g. captcha not ticked: plain validation message, no fallback link */
       console.error(e);
       showError(`We couldn't send the notification email. ${e.userMessage || ''} Your answers are still here.`, { html: linkFallbackHtml(link, sup) });
       $('copy-link').addEventListener('click', async () => {
@@ -207,14 +209,15 @@
     buildHealth();
     buildQuestions();
     $('add-rock').addEventListener('click', addRock);
-    $('emp-name').value = me.name;
+    if (me.name) $('emp-name').value = me.name;
     draft.init('tst-5x5-employee', {
       extra: () => ({ rockCount }),
       beforeRestore: (extra) => { while (rockCount < (extra.rockCount || 0)) addRock(); }
     });
-    /* The email is sent from the signed-in account, so it is not editable. */
-    $('emp-email').value = me.email;
-    $('emp-email').readOnly = true;
+    if (!me.guest) {   /* guests type their own; staff send from their account */
+      $('emp-email').value = me.email;
+      $('emp-email').readOnly = true;
+    }
     onSubmit(submit);
   }
   TST.auth.ready.then(init);

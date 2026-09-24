@@ -49,6 +49,30 @@ window.TST_CONFIG = {
     rockCompletion:    { subject: 'Rock completion — {employee} — {quarter}',        cc: ['automation', 'employee'] }
   },
 
+  /* TEMPORARY guest access for people who can't sign in with Microsoft yet.
+     They enter the team passphrase, fill in the form, tick "I'm not a robot",
+     and the email goes out through EmailJS instead of the shared mailbox.
+     Set ENABLED to false to switch it off everywhere.
+     - PASSPHRASE_SHA256: the passphrase, hashed. To change it, open any form,
+       open the browser console (F12) and run  TST.guest.hash('new phrase')
+       then paste the result here.
+     - RECAPTCHA_SITE_KEY: from google.com/recaptcha/admin (v2 checkbox). The
+       matching SECRET key goes into each EmailJS template's reCAPTCHA setting.
+     Guest access stays hidden until both keys are filled in. */
+  GUEST_ACCESS: {
+    ENABLED: true,
+    PASSPHRASE_SHA256: '59d7fb5763f95e6bb8556ea91d13a763e89a59730db89994e9da4d1d77753340',
+    RECAPTCHA_SITE_KEY: '',
+    EMAILJS: {
+      PUBLIC_KEY: 'qbm0FluRDbLK432li',
+      SERVICE_ID: 'service_x2e8pjc',
+      TEMPLATES: {
+        EMPLOYEE_SUBMITTED: 'template_vi2f9lt',
+        COMPLETED_DOCUMENT: 'template_pz1sj12'
+      }
+    }
+  },
+
   /* Supervisors. The key is the label people pick in the dropdown.
      `email` may list several addresses separated by commas. */
   SUPERVISORS: {
