@@ -109,7 +109,7 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     await page.goto(`${base}/rock-planner.html`);
     check(await page.locator('#auth-signin').isHidden(), 'sign-in button hidden while MSAL checks for a session');
     await page.locator('#auth-signin').waitFor({ state: 'visible', timeout: 30000 });
-    check((await page.locator('#auth-message').textContent()).includes('Sign in with your'), 'real MSAL with no session shows the Sign in button');
+    check((await page.locator('#auth-message').textContent()).includes('personal email'), 'real MSAL with no session shows the Sign in button');
     check(await page.locator('#main-form').isHidden(), 'form stays hidden until signed in');
     check(await page.locator('#auth-guest-link').isVisible(), 'guest link offered next to the sign-in button');
     await page.screenshot({ path: `${OUT}/gate-signin.png` });
