@@ -50,15 +50,15 @@ window.TST_CONFIG = {
   },
 
   /* TEMPORARY guest access for people who can't sign in with Microsoft yet.
-     They enter the team passphrase, fill in the form, tick "I'm not a robot",
-     and the email goes out through EmailJS instead of the shared mailbox.
+     They enter the team passphrase, fill in the form, and the email goes out
+     through EmailJS instead of the shared mailbox.
      Set ENABLED to false to switch it off everywhere.
      - PASSPHRASE_SHA256: the passphrase, hashed. To change it, open any form,
        open the browser console (F12) and run  TST.guest.hash('new phrase')
        then paste the result here.
-     - RECAPTCHA_SITE_KEY: from google.com/recaptcha/admin (v2 checkbox). The
-       matching SECRET key goes into each EmailJS template's reCAPTCHA setting.
-     Guest access stays hidden until both keys are filled in. */
+     - RECAPTCHA_SITE_KEY: optional. Leave blank for no captcha. To add one:
+       google.com/recaptcha/admin (v2 checkbox), site key here, and the matching
+       SECRET key in each EmailJS template's reCAPTCHA setting. */
   GUEST_ACCESS: {
     ENABLED: true,
     PASSPHRASE_SHA256: '59d7fb5763f95e6bb8556ea91d13a763e89a59730db89994e9da4d1d77753340',

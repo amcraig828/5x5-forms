@@ -398,8 +398,8 @@ window.TST = (function () {
   async function sendViaEmailJS({ kind, employee, employeeEmail, quarter, supervisorName, html, extra, to, cc, subject }) {
     const G = CONFIG.GUEST_ACCESS && CONFIG.GUEST_ACCESS.EMAILJS;
     if (!G) throw new Error('Guest email is not configured');
-    const captcha = TST.guest.captchaToken();
-    if (!captcha) throw fail("Please tick \"I'm not a robot\" above the submit button.");
+    const captcha = TST.guest.captchaEnabled() ? TST.guest.captchaToken() : '';
+    if (TST.guest.captchaEnabled() && !captcha) throw fail("Please tick \"I'm not a robot\" above the submit button.");
     await TST.guest.libraries();
     window.emailjs.init({ publicKey: G.PUBLIC_KEY });
     const templateId = kind === 'employeeSubmitted' ? G.TEMPLATES.EMPLOYEE_SUBMITTED : G.TEMPLATES.COMPLETED_DOCUMENT;
@@ -411,9 +411,8 @@ window.TST = (function () {
       employee_email: employeeEmail || '',
       quarter: quarter || '',
       subject,
-      completed_data: html,
-      'g-recaptcha-response': captcha
-    }, extra);
+      completed_data: html
+    }, captcha ? { 'g-recaptcha-response': captcha } : {}, extra);
     try {
       await window.emailjs.send(G.SERVICE_ID, templateId, params);
     } catch (e) {

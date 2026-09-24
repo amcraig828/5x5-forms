@@ -95,8 +95,9 @@
   }
 
   /* ---------- guest path ---------- */
-  const guestAllowed = () => !!(GUEST.ENABLED && GUEST.PASSPHRASE_SHA256 && GUEST.RECAPTCHA_SITE_KEY && GUEST.EMAILJS
+  const guestAllowed = () => !!(GUEST.ENABLED && GUEST.PASSPHRASE_SHA256 && GUEST.EMAILJS
     && document.body.dataset.guestAccess === 'allowed' && window.crypto && window.crypto.subtle);
+  const captchaEnabled = () => !!GUEST.RECAPTCHA_SITE_KEY;
 
   async function sha256(text) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -111,12 +112,12 @@
   });
 
   let librariesPromise = null;
-  /* EmailJS SDK and the reCAPTCHA API, loaded only when a guest needs them. */
+  /* EmailJS SDK and (if a site key is set) the reCAPTCHA API, loaded only when a guest needs them. */
   function libraries() {
     if (!librariesPromise) {
       librariesPromise = Promise.all([
         window.emailjs ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js'),
-        window.grecaptcha ? Promise.resolve() : new Promise((res, rej) => {
+        (!captchaEnabled() || window.grecaptcha) ? Promise.resolve() : new Promise((res, rej) => {
           window.__tstRecaptchaReady = res;
           loadScript('https://www.google.com/recaptcha/api.js?onload=__tstRecaptchaReady&render=explicit').catch(rej);
         })
@@ -128,7 +129,7 @@
   let captchaWidget = null;
   async function mountCaptcha() {
     const anchor = $('error-msg');
-    if (!anchor || $('guest-captcha')) return;
+    if (!captchaEnabled() || !anchor || $('guest-captcha')) return;
     anchor.insertAdjacentHTML('beforebegin',
       `<div class="guest-captcha" id="guest-captcha-wrap"><div class="col-label">One last check before you submit</div><div id="guest-captcha"></div></div>`);
     try {
@@ -225,5 +226,5 @@
   });
 
   TST.auth = { ready, user, token, signOut };
-  TST.guest = { libraries, captchaToken, resetCaptcha, hash: sha256 };
+  TST.guest = { libraries, captchaToken, resetCaptcha, captchaEnabled, hash: sha256 };
 })();

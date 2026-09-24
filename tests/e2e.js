@@ -94,7 +94,7 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     check(await page.locator('#auth-screen').isVisible(), 'auth screen shown when sign-in not configured');
     check((await page.locator('#auth-message').textContent()).includes('not been set up'), 'explains sign-in is not set up');
     check(await page.locator('#auth-signin').isHidden(), 'no sign-in button when not configured');
-    check(await page.locator('#auth-guest-link').isHidden(), 'guest link hidden while RECAPTCHA_SITE_KEY is blank');
+    check(await page.locator('#auth-guest-link').isVisible(), 'guest link offered even when Microsoft sign-in is not configured');
     check(await page.locator('#main-form').isHidden(), 'form hidden without sign-in');
     check(await page.locator('#cv-body tr').count() === 0, 'form not even built without sign-in');
     await page.screenshot({ path: `${OUT}/gate-unconfigured.png` });
@@ -429,6 +429,24 @@ const SUPERVISOR = { name: 'Erica Brinker', email: 'erica@thespeckledtrout.com' 
     await g.goto(`${base}/5x5-supervisor.html?sample=1`);
     check(await g.locator('#auth-guest-link').count() === 0 && await g.locator('#main-form').isHidden(), 'supervisor page never offers guest access');
     await gctx.close();
+
+    /* No captcha configured: passphrase alone, no widget, no token */
+    const nctx = await browser.newContext();
+    await stubGuestLibraries(nctx);
+    await nctx.route('**/assets/js/config.js', configWith({ AUTH: { CLIENT_ID: '', TENANT_ID: '' }, GUEST_ACCESS: Object.assign({}, GUEST_CFG, { RECAPTCHA_SITE_KEY: '' }) }));
+    const n = await nctx.newPage(); watch(n);
+    await n.goto(`${base}/rock-planner.html`);
+    await n.click('#auth-guest-open'); await n.fill('#guest-passphrase', 'Fall26'); await n.press('#guest-passphrase', 'Enter');
+    await n.locator('#main-form').waitFor({ state: 'visible' });
+    check(await n.locator('#guest-captcha').count() === 0, 'no captcha widget when no site key');
+    await n.fill('#emp-name', 'No Captcha'); await n.fill('#emp-initials', 'NC'); await n.selectOption('#emp-entity', 'TST Outpost');
+    await n.selectOption('#emp-supervisor', 'Emily / Erica Brinker'); await n.selectOption('#emp-quarter', 'Q1'); await n.fill('#emp-email', 'nc@gmail.com');
+    await n.fill('#rock-title', 'T'); await n.fill('#rock-desc', 'D'); for (const k of ['s', 'm', 'a', 'r', 't']) await n.fill(`#smart-${k}`, k);
+    for (let i = 0; i < 4; i++) await n.fill(`#step-activity-${i}`, `Step ${i + 1}`);
+    await submit(n, '#success-screen.show');
+    const e3 = await n.evaluate(() => window.__ejs[window.__ejs.length - 1]);
+    check(e3.template === 'template_pz1sj12' && !('g-recaptcha-response' in e3.params) && e3.params.completed_data.includes('===ROCK_PLANNER_DATA_START==='), 'passphrase-only guest send has no captcha param');
+    await nctx.close();
 
     const offctx = await browser.newContext();
     await stubGuestLibraries(offctx);

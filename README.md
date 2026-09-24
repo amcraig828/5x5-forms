@@ -111,31 +111,26 @@ default `'shared'` is simpler for the automation.
 While guest invitations are being sorted out, the three employee-facing forms offer a
 second door: a small "Don't have a Speckled Trout account?" link under the sign-in button.
 The person enters the **team passphrase**, fills in the form (typing their own name and
-email), ticks **"I'm not a robot"** next to the submit button, and the email is sent through
-**EmailJS** instead of the shared mailbox. The supervisor review never offers this.
+email), and the email is sent through **EmailJS** instead of the shared mailbox. The
+supervisor review never offers this.
 
-This is deliberately the weaker path: the passphrase can be shared, and the only check a
-computer can't fake is the reCAPTCHA, which EmailJS verifies on its servers. Turn it off
-(`GUEST_ACCESS.ENABLED: false` in `config.js`) as soon as everyone can sign in.
-
-Setup (one time):
-
-1. Create reCAPTCHA keys at https://www.google.com/recaptcha/admin/create — type
-   **Challenge (v2) → "I'm not a robot" checkbox**, domains `amcraig828.github.io` and
-   `localhost`. You get a **site key** and a **secret key**.
-2. Put the site key in `config.js` → `GUEST_ACCESS.RECAPTCHA_SITE_KEY`. The guest link
-   stays hidden until this is filled in.
-3. In EmailJS (dashboard.emailjs.com) → Email Templates → open `template_vi2f9lt` →
-   Settings → **reCAPTCHA** → enable and paste the **secret** key → Save. Repeat for
-   `template_pz1sj12`. From then on EmailJS refuses sends without a solved captcha.
-4. Optional but recommended, so guest emails look the same as everyone else's: in each
-   template set **To** = `{{supervisor_email}}`, **Cc** = `{{cc_email}}`,
-   **Subject** = `{{subject}}`, and body = `{{{completed_data}}}` (triple braces).
-5. Still in EmailJS → Account → Security: keep the domain allow-list on for
-   `amcraig828.github.io`.
+This is deliberately the weaker path: anyone who knows the passphrase can submit, and
+nothing stops a script that has the passphrase. Turn it off (`GUEST_ACCESS.ENABLED: false`
+in `config.js`) as soon as everyone can sign in, and keep EmailJS → Account → Security →
+domain allow-list on for `amcraig828.github.io`.
 
 Changing the passphrase: open any form, press F12 for the browser console, run
 `TST.guest.hash('new phrase')` and paste the result into `PASSPHRASE_SHA256`.
+
+Optional hardening — a captcha: create v2 "I'm not a robot" keys at
+https://www.google.com/recaptcha/admin/create (domains `amcraig828.github.io` and
+`localhost`), put the **site key** in `GUEST_ACCESS.RECAPTCHA_SITE_KEY`, and enable
+reCAPTCHA with the **secret key** in each EmailJS template's Settings. The form then shows
+the checkbox next to submit and EmailJS refuses sends without it.
+
+So guest emails look the same as everyone else's, in each EmailJS template set **To** =
+`{{supervisor_email}}`, **Cc** = `{{cc_email}}`, **Subject** = `{{subject}}`, and body =
+`{{{completed_data}}}` (triple braces). The older template variables are still sent too.
 
 Mailbox agent note: guest submissions arrive from the EmailJS sending address without the
 `x-tst-*` headers, so the agent must also accept mail from that address whose subject
