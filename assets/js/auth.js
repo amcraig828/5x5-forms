@@ -216,7 +216,7 @@
       return;
     }
 
-    screen('Sign in with your Speckled Trout Microsoft account to open this form.', { button: true });
+    screen('Use your Speckled Trout Microsoft account, or your personal email if you don\'t have one.', { button: true });
     $('auth-signin').addEventListener('click', () => pca.loginRedirect({ scopes: SCOPES }));
   }
 
