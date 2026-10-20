@@ -219,12 +219,15 @@ button { font-family: var(--sans); }
 .footer-note { font-family: var(--sans); font-size: 11px; color: var(--ink-tertiary); margin-top: 2rem; line-height: 1.6; }
 
 /* ---------- Print ---------- */
+#print-view { display: none; }
+
 @media print {
   body { background: #fff; }
   .page { padding: 0; max-width: none; }
-  .btn-row, .sending-overlay, .notice, .error-msg, .header-links { display: none !important; }
+  .btn-row, .sending-overlay, .notice, .error-msg, .header-links, .success-screen, .auth-screen { display: none !important; }
   .section { break-inside: avoid; border-color: #ccc; }
   .rating-btn { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #print-view { display: block !important; }
 }
 
 /* ---------- Small screens ---------- */

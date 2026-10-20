@@ -245,12 +245,14 @@ FIELD:employee_name|${oneLine(emp.name)}|||FIELD:entity|${oneLine(emp.entity)}||
 
   async function submit() {
     const supData = collect();
+    const completedHtml = buildCompletedData(supData);
     await sendMail({
       kind: 'completedReview', formType: '5x5-completed',
       employee: emp.name, employeeEmail: emp.empEmail, quarter: emp.quarter, supervisorName: emp.supervisorName,
-      html: buildCompletedData(supData)
+      html: completedHtml
     });
 
+    $('print-view').innerHTML = completedHtml;
     draft.clear();
     showSuccess();
   }
